@@ -1,49 +1,31 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSplitter
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPalette
+from ColoredWidget import ColoredWidget
 
 class ContentSplitterWidget(QWidget):
-    def __init__(self, parent=None, orientation=Qt.Horizontal, fixed_panel='first', initial_sizes=(200, 600)):
+    def __init__(self, parent=None, orientation=Qt.Horizontal, fixed_panel='first', initial_sizes=(200, 600), colors=("green", "yellow")):
         super().__init__(parent)
         self.orientation = orientation
         self.fixed_panel = fixed_panel
         self.initial_sizes = initial_sizes
+        self.colors = {"panel1": QColor(colors[0]), "panel2": QColor(colors[1])}
         self.init_ui()
 
     def init_ui(self):
         self.content_splitter = QSplitter(self.orientation, self)
-        self.panel1 = self.create_colored_widget(QColor("green"))
-        self.panel2 = self.create_colored_widget(QColor("yellow"))
+        self.panel1 = ColoredWidget(self.colors["panel1"], parent=self)
+        self.panel2 = ColoredWidget(self.colors["panel2"], parent=self)
 
         self.content_splitter.addWidget(self.panel1)
         self.content_splitter.addWidget(self.panel2)
         self.content_splitter.setSizes(list(self.initial_sizes))
 
-        layout = QHBoxLayout()
-        self.setLayout(layout)
+        layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self.content_splitter)
-
         self.content_splitter.splitterMoved.connect(self.update_panel_size)
-
-    def create_colored_widget(self, color, fixed_width=None):
-        widget = QWidget()
-        palette = QPalette()
-        palette.setColor(QPalette.Window, color)
-        widget.setPalette(palette)
-        widget.setAutoFillBackground(True)
-
-        # 确保每个 widget 都有一个布局
-        layout = QHBoxLayout(widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        widget.setLayout(layout)
-
-        if fixed_width is not None:
-            widget.setFixedWidth(fixed_width)
-
-        return widget
 
     def update_panel_size(self):
         if self.orientation == Qt.Horizontal and self.fixed_panel == 'first':

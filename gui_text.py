@@ -1,6 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout
-from PyQt5.QtGui import QColor, QPalette
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PyQt5.QtGui import QColor
 from PyQt5.QtCore import QSize, Qt
 from MainQWidget import MainQWidget
 
@@ -10,27 +10,29 @@ class MainInterface(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.main_layout_widget = MainQWidget(self,
-                                              panel1_color=QColor("blue"), 
-                                              panel1_pixel=70,
-                                              splitter_orientation=Qt.Horizontal,
-                                              layout_orientation=Qt.Horizontal, 
-                                              fixed_panel='first', 
-                                              initial_sizes=(200, 600))
-        self.main_layout_widget.get_panel2().setPanel2Content(MainQWidget(self,
-                                                                          panel1_color=QColor("blue"), 
-                                                                          panel1_pixel=50,
-                                                                          splitter_orientation=Qt.Vertical,
-                                                                          layout_orientation=Qt.Vertical, 
-                                                                          fixed_panel='second', 
-                                                                          initial_sizes=(0, 150)
-                                                                          ))
+        # 主界面的配置，這裡直接使用tuple來傳遞顏色和尺寸
+        self.main_layout_widget = MainQWidget(self, 
+                                              colors=("blue", "green", "yellow"), 
+                                              sizes=(70, 200, 600), 
+                                              orientations=(Qt.Horizontal, Qt.Horizontal), 
+                                              fixed_panel='first')
+
+        # 嵌套的MainQWidget實例，用於設置panel2的內容
+        nested_widget = MainQWidget(self, 
+                                    colors=("purple", "red", "orange"), 
+                                    sizes=(50, 0, 150), 
+                                    orientations=(Qt.Vertical, Qt.Vertical), 
+                                    fixed_panel='second')
+
+        # 將nested_widget設為panel2的內容
+        self.main_layout_widget.get_panel2().setPanel2Content(nested_widget)
+
+        # 設置佈局
         layout = QVBoxLayout(self)
         self.setZeroMarginsAndSpacing(layout)
         layout.addWidget(self.main_layout_widget)
-        #self.main_layout.setPanel
         self.setLayout(layout)
-        
+
     def sizeHint(self):
         return QSize(800, 600)
     
