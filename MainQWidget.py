@@ -42,7 +42,7 @@ class MainQWidget(QWidget):
     
     def set_panel2_Content(self, panel_num, widget):
         if panel_num == 1:
-            self.panel1.setPanel1Content(widget)
+            self.panel2.setPanel1Content(widget)
         else:   
             self.panel2.setPanel2Content(widget)
 

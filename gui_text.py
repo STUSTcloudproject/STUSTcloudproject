@@ -18,18 +18,19 @@ class MainInterface(QWidget):
                                               fixed_panel='first')
 
         # 嵌套的MainQWidget實例，用於設置panel2的內容
-        nested_widget = MainQWidget(self, 
+        self.nested_widget = MainQWidget(self, 
                                     colors=("purple", "red", "orange"), 
                                     sizes=(50, 0, 150), 
                                     orientations=(Qt.Vertical, Qt.Vertical, Qt.Horizontal), 
                                     fixed_panel='second')
 
-        nested_widget.addColoredSquareToPanel1("green", 40)
+        self.nested_widget.addColoredSquareToPanel1("green", 50)
 
         # 將nested_widget設為panel2的內容
-        self.main_layout_widget.set_panel2_Content(2, nested_widget)
+        self.main_layout_widget.set_panel2_Content(2, self.nested_widget)
 
-        self.main_layout_widget.addColoredSquareToPanel1("red", 50)
+        self.main_layout_widget.addColoredSquareToPanel1("red", 70)
+        self.main_layout_widget.addColoredSquareToPanel1("yellow", 70)
 
         # 設置佈局                                                                                                                                                                                                                                                                                                                                                                                                                                  
         layout = QVBoxLayout(self)
