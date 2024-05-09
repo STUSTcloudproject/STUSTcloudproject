@@ -52,16 +52,20 @@ class ContentSplitterWidget(QWidget):
             sizes = [first_panel_length, self.initial_sizes[1]]
         self.content_splitter.setSizes(sizes)
     def setPanel1Content(self, widget):
-        # 清空当前面板的所有子控件
-        for i in reversed(range(self.panel1.layout().count())):
-            self.panel1.layout().itemAt(i).widget().setParent(None)
-        # 设置新的内容
-        self.panel1.layout().addWidget(widget)
+        # Use ColoredWidget's method to remove all widgets
+        self.panel1.removeAllWidgets()
+        # Add new widget using ColoredWidget's method
+        self.panel1.addToLayout(widget)
 
     def setPanel2Content(self, widget):
-        # 清空当前面板的所有子控件
-        for i in reversed(range(self.panel2.layout().count())):
-            self.panel2.layout().itemAt(i).widget().setParent(None)
-        # 设置新的内容
-        self.panel2.layout().addWidget(widget)
-# The code to initialize and run a QApplication is the same as before, omitted here for brevity.
+        # Use ColoredWidget's method to remove all widgets
+        self.panel2.removeAllWidgets()
+        # Add new widget using ColoredWidget's method
+        self.panel2.addToLayout(widget)
+
+
+    def get_panel1(self):
+        return self.panel1
+
+    def get_panel2(self):
+        return self.panel2
