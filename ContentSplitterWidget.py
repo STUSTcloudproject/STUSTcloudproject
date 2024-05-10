@@ -21,10 +21,10 @@ class ContentSplitterWidget(QWidget):
         self.content_splitter.addWidget(self.panel2)
         self.content_splitter.setSizes(list(self.initial_sizes))
 
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.addWidget(self.content_splitter)
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        self.layout.addWidget(self.content_splitter)
         self.content_splitter.splitterMoved.connect(self.update_panel_size)
 
     def update_panel_size(self):

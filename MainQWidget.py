@@ -46,17 +46,5 @@ class MainQWidget(QWidget):
         else:   
             self.panel2.setPanel2Content(widget)
 
-    def addColoredSquareToPanel1(self, color, size=50):
-        """Adds a colored square to panel1, which contains a 50x50 button."""
-        # 创建 ColoredWidget 实例，颜色和尺寸根据参数设置
-        colored_square = ColoredWidget(QColor(color), size=size, orientation=self.layout_orientation, parent=self.panel1)
-        
-        # 创建一个按钮，设置固定大小
-        button = QPushButton("")
-        button.setFixedSize(size, size)  # 设置按钮的固定大小
-        
-        # 将按钮添加到 colored_square 中
-        colored_square.addToLayout(button)
-
-        # 将 ColoredWidget 实例添加到 panel1 的布局中
-        self.panel1.addToLayout(colored_square)
+    def set_Panel1_Content(self, widget):
+        self.panel1.addToLayout(widget)
