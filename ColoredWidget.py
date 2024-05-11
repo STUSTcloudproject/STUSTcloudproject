@@ -6,7 +6,7 @@ class ColoredWidget(QWidget):
     def __init__(self, color, size=None, orientation=Qt.Horizontal, add_position=None, parent=None):
         # 初始化ColoredWidget
         super().__init__(parent)
-        
+
         self.orientation = orientation
         self.add_position = add_position
         self.setPalette(self.get_palette(color))

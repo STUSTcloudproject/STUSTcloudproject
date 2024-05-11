@@ -24,9 +24,11 @@ class ContentSplitterWidget(QWidget):
 
     def init_ui(self):
         # 初始化ContentSplitterWidget的UI
+
+        panel_orientation = Qt.Vertical if self.orientation == Qt.Vertical else Qt.Horizontal
         self.content_splitter = QSplitter(self.orientation, self)
-        self.panel1 = ColoredWidget(self.colors["panel1"], parent=self)
-        self.panel2 = ColoredWidget(self.colors["panel2"], parent=self)
+        self.panel1 = ColoredWidget(self.colors["panel1"], parent=self, orientation=panel_orientation)
+        self.panel2 = ColoredWidget(self.colors["panel2"], parent=self, orientation=panel_orientation)
         
         # 將panel1和panel2添加到content_splitter中
         self.content_splitter.addWidget(self.panel1)

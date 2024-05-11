@@ -8,7 +8,8 @@ class MainQWidget(QWidget):
     def __init__(
             self, 
             parent=None, 
-            colors=("blue", "green", "yellow"), 
+            self_color = (255, 255, 255),
+            colors=((0, 0, 255), (0, 255, 0), (255, 255, 0)), 
             sizes=(70, 200, 600), 
             orientations=(Qt.Horizontal, Qt.Horizontal, Qt.Vertical), 
             fixed_panel='first'
@@ -16,13 +17,15 @@ class MainQWidget(QWidget):
         # 初始化主界面
         super().__init__(parent)
         
-        self.colors = {"panel1": QColor(colors[0]), "splitter1": QColor(colors[1]), "splitter2": QColor(colors[2])}
+        self.self_color = QColor(*self_color)
+        self.colors = {"panel1": QColor(*colors[0]), "splitter1": QColor(*colors[1]), "splitter2": QColor(*colors[2])}
         self.panel_pixel = sizes[0]
         self.initial_sizes = (sizes[1], sizes[2])
         self.splitter_orientation, self.layout_orientation, self.panel1_orientation = orientations
         self.fixed_panel = fixed_panel
 
         self.setupLayout()
+        self.setSelfBackgroundColor()
 
     def setupLayout(self):
         # 初始化主界面的布局
@@ -39,6 +42,12 @@ class MainQWidget(QWidget):
 
         self.layout.addWidget(self.panel1)
         self.layout.addWidget(self.panel2, 1)
+
+    def setSelfBackgroundColor(self):
+        # 使用 QPalette 设置自身背景颜色
+        palette = self.palette()
+        palette.setColor(QPalette.Window, self.self_color)
+        self.setPalette(palette)
 
     def setZeroMarginsAndSpacing(self, layout):
         # 設置layout的邊距和間距
