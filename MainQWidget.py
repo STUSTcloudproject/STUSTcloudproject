@@ -5,8 +5,17 @@ from ContentSplitterWidget import ContentSplitterWidget
 from ColoredWidget import ColoredWidget
 
 class MainQWidget(QWidget):
-    def __init__(self, parent=None, colors=("blue", "green", "yellow"), sizes=(70, 200, 600), orientations=(Qt.Horizontal, Qt.Horizontal, Qt.Vertical), fixed_panel='first'):
+    def __init__(
+            self, 
+            parent=None, 
+            colors=("blue", "green", "yellow"), 
+            sizes=(70, 200, 600), 
+            orientations=(Qt.Horizontal, Qt.Horizontal, Qt.Vertical), 
+            fixed_panel='first'
+            ):
+        # 初始化主界面
         super().__init__(parent)
+        
         self.colors = {"panel1": QColor(colors[0]), "splitter1": QColor(colors[1]), "splitter2": QColor(colors[2])}
         self.panel_pixel = sizes[0]
         self.initial_sizes = (sizes[1], sizes[2])
@@ -16,6 +25,7 @@ class MainQWidget(QWidget):
         self.setupLayout()
 
     def setupLayout(self):
+        # 初始化主界面的布局
         self.layout = QHBoxLayout(self) if self.layout_orientation == Qt.Horizontal else QVBoxLayout(self)
         self.setZeroMarginsAndSpacing(self.layout)
 
@@ -31,20 +41,14 @@ class MainQWidget(QWidget):
         self.layout.addWidget(self.panel2, 1)
 
     def setZeroMarginsAndSpacing(self, layout):
+        # 設置layout的邊距和間距
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
     def get_panel1(self):
+        # 獲取panel1
         return self.panel1
 
     def get_panel2(self):
+        # 獲取panel2
         return self.panel2
-    
-    def set_panel2_Content(self, panel_num, widget):
-        if panel_num == 1:
-            self.panel2.setPanel1Content(widget)
-        else:   
-            self.panel2.setPanel2Content(widget)
-
-    def set_Panel1_Content(self, widget):
-        self.panel1.addToLayout(widget)
