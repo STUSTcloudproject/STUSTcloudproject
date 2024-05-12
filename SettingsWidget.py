@@ -43,10 +43,16 @@ class SettingsWidget(QWidget):
         label.setStyleSheet(f"color: {color};")
         return label
 
-    def toggle_selection(self):
-        self.is_selected = not self.is_selected
+    def toggle_selection(self, selected=None):
+        if selected is not None:
+            self.is_selected = selected
+        else:
+            self.is_selected = not self.is_selected
         self.update_right_widget_color()
 
     def update_right_widget_color(self):
         color = self.selected_color if self.is_selected else self.unselected_color
         self.right_widget.setStyleSheet(f"background-color: {color.name()};")
+
+    def get_selected(self):
+        return self.is_selected

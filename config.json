@@ -1,0 +1,157 @@
+{
+    "colors": {
+        "main_background": [62, 62, 62],
+        "main_panel_backgrounds": [[51, 51, 51], [37, 37, 38], [62, 62, 62]],
+        "nested_panel_backgrounds": [[37, 37, 38], [30, 30, 30], [37, 37, 38]]
+    },
+    "sizes": {
+        "activate_bar_width": 80,
+        "start_bar_width": 60,
+        "main_panel_sizes": [80, 235, 600],
+        "nested_panel_sizes": [60, 0, 150] 
+    },
+    "ui_settings": {
+        "main_panel_orientations": ["Horizontal", "Horizontal", "Vertical"],
+        "nested_panel_orientations": ["Vertical", "Vertical", "Horizontal"],
+        "main_fixed_panel": "first",
+        "nested_fixed_panel": "second"
+    },
+    "buttons": {
+        "activity_bar": [
+            {
+                "name": "Home",
+                "owner": "activity_bar",
+                "icon": "None",
+                "color": "transparent",
+                "size": 80,
+                "callback": "callback"
+            },
+            {
+                "name": "Record",
+                "owner": "activity_bar",
+                "icon": "None",
+                "color": "transparent",
+                "size": 80,
+                "callback": "callback"
+            },
+            {
+                "name": "RunSystem",
+                "owner": "activity_bar",
+                "icon": "None",
+                "color": "transparent",
+                "size": 80,
+                "callback": "callback"
+            },
+            {
+                "name": "View",
+                "owner": "activity_bar",
+                "icon": "None",
+                "color": "transparent",
+                "size": 80,
+                "callback": "callback"
+            }
+        ],
+        "start_bar": {
+            "Home": [
+                
+            ],
+            "Record": [
+                {
+                    "name": "Record",
+                    "owner": "start_bar",
+                    "icon": "None",
+                    "color": "transparent",
+                    "size": 60,
+                    "callback": "callback"
+                },
+                {
+                    "name": "Stop",
+                    "owner": "start_bar",
+                    "icon": "None",
+                    "color": "transparent",
+                    "size": 60,
+                    "callback": "callback"
+                },
+                {
+                    "name": "Start",
+                    "owner": "start_bar",
+                    "icon": "None",
+                    "color": "transparent",
+                    "size": 60,
+                    "callback": "callback"
+                }
+            ],
+            "RunSystem": [
+                {
+                    "name": "Stop",
+                    "owner": "start_bar",
+                    "icon": "None",
+                    "color": "transparent",
+                    "size": 60,
+                    "callback": "callback"
+                },
+                {
+                    "name": "Start",
+                    "owner": "start_bar",
+                    "icon": "None",
+                    "color": "transparent",
+                    "size": 60,
+                    "callback": "callback"
+                }
+            ],
+            "View": [
+                {
+                    "name": "Stop",
+                    "owner": "start_bar",
+                    "icon": "None",
+                    "color": "transparent",
+                    "size": 60,
+                    "callback": "callback"
+                },
+                {
+                    "name": "Start",
+                    "owner": "start_bar",
+                    "icon": "None",
+                    "color": "transparent",
+                    "size": 60,
+                    "callback": "callback"
+                }
+            ]
+        }
+    },
+    "sidebar_settings": {
+        "settings_item": {
+            "Home": {
+
+            },
+            "Record": {
+                "必選項目": {
+                    "name": ["Record imgs", "Record rosbag", "Playback rosbag"],
+                    "description": ["錄製rgbd文件", "錄製.bag文件", "回放.bag文件"]
+                }
+            },
+            "RunSystem": {
+                "必選項目": {
+                    "name": ["Make", "Register", "Refine", "Integrate"],
+                    "description": ["Make fragment", "Register fragments", "Refine registration", "Integrate scene"]
+                },
+                "可選項目": {
+                    "name": ["Slac", "Slac integrate", "Debug mode"],
+                    "description": [" ", " ", " "]
+                }
+            },
+            "View": {
+                
+            }
+        },
+        "selectionMode": {
+            "single": [
+                "Record"
+            ],
+            "multiple": [
+                "RunSystem"
+            ]
+        },
+        "callback": "callback"
+    }
+}

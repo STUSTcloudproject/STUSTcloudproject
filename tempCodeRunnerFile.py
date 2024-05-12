@@ -1,1 +1,0 @@
-.set_panel2_Content(1, self.nested_widget)
