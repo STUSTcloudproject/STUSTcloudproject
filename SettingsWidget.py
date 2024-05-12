@@ -1,27 +1,52 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
+from PyQt5.QtGui import QFont, QColor
+from ColoredWidget import ColoredWidget
+from PyQt5.QtCore import Qt
 
 class SettingsWidget(QWidget):
     def __init__(self, title, description, parent=None):
         super().__init__(parent)
-        self.layout = QVBoxLayout(self)
-        
-        # 创建标题标签
-        self.titleLabel = QLabel(title, self)
-        titleFont = QFont()
-        titleFont.setPointSize(14)  # 标题字体大小
-        titleFont.setBold(True)  # 标题加粗
-        self.titleLabel.setFont(titleFont)
-        self.titleLabel.setStyleSheet("color: white;")  # 标题字体颜色为白色
+        self.unselected_color = QColor(200, 200, 200)
+        self.selected_color = QColor(0, 120, 215)  # 亮蓝色
+        self.is_selected = False  # 初始状态未选中
+        self.setup_layout()
+        self.setup_left_widget(title, description)
+        self.setup_right_widget()
 
-        # 创建描述标签
-        self.descriptionLabel = QLabel(description, self)
-        descriptionFont = QFont()
-        descriptionFont.setPointSize(10)  # 描述字体大小
-        self.descriptionLabel.setFont(descriptionFont)
-        self.descriptionLabel.setStyleSheet("color: white;")  # 描述字体颜色为白色
+    def setup_layout(self):
+        self.layout = QHBoxLayout(self)
+        self.setStyleSheet("background-color: transparent;")
 
-        self.layout.addWidget(self.titleLabel)
-        self.layout.addWidget(self.descriptionLabel)
-        self.setStyleSheet("background-color: transparent;")  # 设置背景透明
+    def setup_left_widget(self, title, description):
+        self.left_widget = ColoredWidget(parent=self, orientation=Qt.Vertical)
+        titleLabel = self.create_label(title, 14, True, "white")
+        descriptionLabel = self.create_label(description, 10, False, "white")
+        self.left_widget.addToLayout(titleLabel)
+        self.left_widget.addToLayout(descriptionLabel)
+        self.layout.addWidget(self.left_widget)
 
+    def setup_right_widget(self):
+        self.right_widget = ColoredWidget(parent=self, orientation=Qt.Vertical)
+        self.update_right_widget_color()
+        spaceLabel = QLabel("", self)
+        spaceLabel.setFixedWidth(5)
+        self.right_widget.addToLayout(spaceLabel)
+        self.layout.addStretch(1)
+        self.layout.addWidget(self.right_widget)
+
+    def create_label(self, text, point_size, bold, color):
+        label = QLabel(text, self)
+        font = QFont()
+        font.setPointSize(point_size)
+        font.setBold(bold)
+        label.setFont(font)
+        label.setStyleSheet(f"color: {color};")
+        return label
+
+    def toggle_selection(self):
+        self.is_selected = not self.is_selected
+        self.update_right_widget_color()
+
+    def update_right_widget_color(self):
+        color = self.selected_color if self.is_selected else self.unselected_color
+        self.right_widget.setStyleSheet(f"background-color: {color.name()};")

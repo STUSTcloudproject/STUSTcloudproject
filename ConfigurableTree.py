@@ -41,5 +41,8 @@ class ConfigurableTree(QTreeWidget):
     def toggleItemState(self, item, column):
         # Retrieve stored data from the item
         custom_data = item.data(0, Qt.UserRole)
+        widget = self.itemWidget(item, 0)
         print(f"Double-clicked on item: {custom_data}")
+        if widget and hasattr(widget, 'toggle_selection'):
+            widget.toggle_selection()  # 调用绑定的widget的toggle_selection方法
 

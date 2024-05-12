@@ -37,7 +37,7 @@ class MainQWidget(QWidget):
         else:
             position = Qt.AlignTop
             
-        self.panel1 = ColoredWidget(self.colors["panel1"], size=self.panel_pixel, orientation=self.panel1_orientation, add_position=position, parent=self)
+        self.panel1 = ColoredWidget(color = self.colors["panel1"], size=self.panel_pixel, orientation=self.panel1_orientation, add_position=position, parent=self)
         self.panel2 = ContentSplitterWidget(self, orientation=self.splitter_orientation, fixed_panel=self.fixed_panel, initial_sizes=self.initial_sizes, colors=(self.colors["splitter1"], self.colors["splitter2"]))
 
         self.layout.addWidget(self.panel1)
