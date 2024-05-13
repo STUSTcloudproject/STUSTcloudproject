@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QWidget, QDialog
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import QSize, Qt
 from MainQWidget import MainQWidget
@@ -8,12 +8,19 @@ from SettingsWidget import SettingsWidget
 from ConfigurableTree import ConfigurableTree
 from config_manager import load_config, get_orientation
 from Text_display_panel import TextDisplayPanel
+from ConfirmDialog import ConfirmDialog
 
 class MainInterface(QWidget):
     def __init__(self):
         # 初始化主界面
         super().__init__()
         self.config = load_config('config.json')
+
+        self.activated = False
+        self.current_mode = "Home"
+
+        self.treeWidget = None
+
         self.main_layout_widget = None
         self.activity_bar = None
         self.main_splitter = None
@@ -108,7 +115,7 @@ class MainInterface(QWidget):
         else:
             selectionMode = "single"
         
-        treeWidget = ConfigurableTree(callback=callback_function, selectionMode=selectionMode)
+        self.treeWidget = ConfigurableTree(callback=callback_function, selectionMode=selectionMode)
 
         if is_set:
             categories = sidebar_settings["settings_item"][mode]
@@ -116,12 +123,12 @@ class MainInterface(QWidget):
                 extra_data = {
                     "description": ", ".join(group_info['description'])  # 将描述信息合并成一个字符串
                 }
-                group = treeWidget.addGroup(group_name, extra_data)
+                group = self.treeWidget.addGroup(group_name, extra_data)
                 for name, description in zip(group_info['name'], group_info['description']):
                     widget = SettingsWidget(name, description)
-                    treeWidget.addItem(group, widget, name)
+                    self.treeWidget.addItem(group, widget, name)
             
-        self.side_bar.clearAndAddWidget(treeWidget)
+        self.side_bar.clearAndAddWidget(self.treeWidget)
 
 
     def set_button_bar(self, bar, buttons_info):
@@ -165,6 +172,22 @@ class MainInterface(QWidget):
             return
         self.display_panel.clearAndAddWidget(display_panel)
 
+    def get_treeWidget_selected(self):
+        # 獲取樹狀結構的選擇狀態
+        return self.treeWidget.get_treeWidget_selected()
+
+
+    def create_detial_panel(self, mode, selected_items):
+        # 创建详细设置面板
+        print(f"Create detail panel for {mode} mode with selected items: {selected_items}")
+        dialog = ConfirmDialog("Confirmation", selected_items, self)
+        if dialog.exec_() == QDialog.Accepted:
+            print("Confirmed:", dialog.get_selection())
+            return True
+        else:
+            print("Cancelled")
+            return False
+
     def sizeHint(self):
         # 設置視窗大小
         return QSize(1200, 800)
@@ -177,17 +200,38 @@ class MainInterface(QWidget):
     def callback(self, info):
         # 按鈕的回調函數
         print(f"Button name: {info['name']}, Owner: {info['owner']}")
+        
         if info["owner"] == "activity_bar":
+            self.current_mode = info["name"]
             self.set_side_bar(sidebar_settings=self.config['sidebar_settings'], mode = info["name"])
             self.set_start_bar(self.config['buttons']['start_bar'][info["name"]])
             #增加對display_panel的設置
             self.set_text_display_panel(self.get_text_display_panel(self.config["display_panel_text"][info["name"]]))
+        
         elif info["owner"] == "configurable_tree":
             self.set_text_display_panel(self.get_text_display_panel(self.config["display_panel_text"][info["name"]]))
-            pass
+        
         elif info["owner"] == "start_bar":
-            #先檢查QTree裡面的內容並取得設定項目，再彈出詳細設定視窗
-            pass
+            if info["name"] == "Start":
+                if self.activated == False:
+                    #先檢查QTree裡面的內容並取得設定項目，再彈出詳細設定視窗
+                    selected_items_dict = self.get_treeWidget_selected()
+                    #如果selected_items_dict不為空，則彈出詳細設定視窗
+                    if selected_items_dict:
+                        if self.create_detial_panel(info["name"], selected_items_dict):
+                            self.activated = True
+                            # 把 selected_items_dict 傳送給 Controller
+                            print(f"Send selected items to Controller:{self.current_mode} {selected_items_dict}")
+                    else:
+                        self.activated = True
+                        print(f"Send selected items to Controller:{self.current_mode} {selected_items_dict}")
+                        
+            elif info["name"] == "Stop":
+                self.activated = False
+                pass
+            elif info["name"] == "Record":
+                pass
+        #print(f"Current mode: {self.current_mode}")
 
 # 啟動應用程序
 app = QApplication(sys.argv)

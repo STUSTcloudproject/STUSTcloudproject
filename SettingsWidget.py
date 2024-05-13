@@ -8,6 +8,7 @@ class SettingsWidget(QWidget):
         super().__init__(parent)
         self.unselected_color = QColor(200, 200, 200)
         self.selected_color = QColor(0, 120, 215)  # 亮蓝色
+        self.title = title
         self.is_selected = False  # 初始状态未选中
         self.setup_layout()
         self.setup_left_widget(title, description)
@@ -53,6 +54,9 @@ class SettingsWidget(QWidget):
     def update_right_widget_color(self):
         color = self.selected_color if self.is_selected else self.unselected_color
         self.right_widget.setStyleSheet(f"background-color: {color.name()};")
+
+    def get_title(self):
+        return self.title
 
     def get_selected(self):
         return self.is_selected
