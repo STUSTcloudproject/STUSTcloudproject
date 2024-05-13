@@ -7,6 +7,7 @@ from ButtonWidget import ButtonWidget
 from SettingsWidget import SettingsWidget
 from ConfigurableTree import ConfigurableTree
 from config_manager import load_config, get_orientation
+from Text_display_panel import TextDisplayPanel
 
 class MainInterface(QWidget):
     def __init__(self):
@@ -22,7 +23,7 @@ class MainInterface(QWidget):
         self.nested_widget = None
         self.start_bar = None
         self.nested_splitter = None
-        self.nested_splitter_panel1 = None
+        self.display_panel = None
         self.nested_splitter_panel2 = None
 
         self.init_ui()
@@ -68,7 +69,7 @@ class MainInterface(QWidget):
         
         self.start_bar = self.nested_widget.get_panel1()
         self.nested_splitter = self.nested_widget.get_panel2()
-        self.nested_splitter_panel1 = self.nested_splitter.get_panel1()
+        self.display_panel = self.nested_splitter.get_panel1()
         self.nested_splitter_panel2 = self.nested_splitter.get_panel2()
 
         # 將nested_widget設為panel2的內容
@@ -85,7 +86,8 @@ class MainInterface(QWidget):
         self.set_activity_bar(self.config['buttons']['activity_bar'])
         self.set_side_bar(sidebar_settings=self.config['sidebar_settings'], mode="Home")
         self.set_start_bar(self.config['buttons']['start_bar']['Home'])
-        #增加對nested_splitter_panel1的設置
+        #增加對display_panel的設置
+        self.set_text_display_panel(self.get_text_display_panel(self.config["display_panel_text"]["Home"]))
 
     def set_side_bar(self, sidebar_settings=None, is_set=True, mode="Home"):
         # 設置側邊欄
@@ -145,7 +147,24 @@ class MainInterface(QWidget):
 
     def set_start_bar(self, start_bar_buttons):
         self.set_button_bar(self.start_bar, start_bar_buttons)
-    
+
+    def get_text_display_panel(self, display_panel_text):
+        # 獲取TextDisplayPanel實例
+        return TextDisplayPanel(
+            title=display_panel_text['title'],
+            content=display_panel_text['content'],
+            background_color=display_panel_text['background_color'],
+            font_color=display_panel_text['font_color'],
+            title_font_size=display_panel_text['title_font_size'],
+            content_font_size=display_panel_text['content_font_size']
+        )
+
+    def set_text_display_panel(self, display_panel):
+        if self.display_panel is None:
+            print(f"{self.display_panel} is None")
+            return
+        self.display_panel.clearAndAddWidget(display_panel)
+
     def sizeHint(self):
         # 設置視窗大小
         return QSize(1200, 800)
@@ -161,9 +180,10 @@ class MainInterface(QWidget):
         if info["owner"] == "activity_bar":
             self.set_side_bar(sidebar_settings=self.config['sidebar_settings'], mode = info["name"])
             self.set_start_bar(self.config['buttons']['start_bar'][info["name"]])
-            #增加對nested_splitter_panel1的設置
+            #增加對display_panel的設置
+            self.set_text_display_panel(self.get_text_display_panel(self.config["display_panel_text"][info["name"]]))
         elif info["owner"] == "configurable_tree":
-            #增加對nested_splitter_panel1的設置
+            self.set_text_display_panel(self.get_text_display_panel(self.config["display_panel_text"][info["name"]]))
             pass
         elif info["owner"] == "start_bar":
             #先檢查QTree裡面的內容並取得設定項目，再彈出詳細設定視窗

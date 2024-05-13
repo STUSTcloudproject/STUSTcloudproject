@@ -153,5 +153,120 @@
             ]
         },
         "callback": "callback"
+    },
+    "display_panel_text": {
+        "Home": {
+            "title": "Home",
+            "content": "Home",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Record": {
+            "title": "Record",
+            "content": "Record",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "RunSystem": {
+            "title": "RunSystem",
+            "content": "RunSystem",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "View": {
+            "title": "View",
+            "content": "View",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Record imgs": {
+            "title": "Record imgs",
+            "content": "Record imgs",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Record rosbag": {
+            "title": "Record rosbag",
+            "content": "Record rosbag",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Playback rosbag": {
+            "title": "Playback rosbag",
+            "content": "Playback rosbag",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Make": {
+            "title": "Make",
+            "content": "Make",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Register": {
+            "title": "Register",
+            "content": "Register",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Refine": {
+            "title": "Refine",
+            "content": "Refine",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Integrate": {
+            "title": "Integrate",
+            "content": "Integrate",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Slac": {
+            "title": "Slac",
+            "content": "Slac",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Slac integrate": {
+            "title": "Slac integrate",
+            "content": "Slac integrate",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        },
+        "Debug mode": {
+            "title": "Debug mode",
+            "content": "Debug mode",
+            "background_color": "#1E1E1E",
+            "font_color": "#DCDCDC",
+            "title_font_size": "24pt",
+            "content_font_size": "12pt"
+        }
+
     }
 }
