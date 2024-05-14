@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSplitter
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPalette
-from ColoredWidget import ColoredWidget
+from custom_widgets.ColoredWidget import ColoredWidget
 
 class ContentSplitterWidget(QWidget):
     def __init__(

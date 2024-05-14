@@ -2,21 +2,13 @@ import sys
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QWidget, QDialog
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import QSize, Qt
-from MainQWidget import MainQWidget
-from ButtonWidget import ButtonWidget
-from SettingsWidget import SettingsWidget
-from ConfigurableTree import ConfigurableTree
-from config_manager import load_config, get_orientation
-from Text_display_panel import TextDisplayPanel
-from ConfirmDialog import ConfirmDialog
-from TerminalWidget import TerminalWidget
-from ErrorDialog import ErrorDialog
+import widgets as w
 
 class MainInterface(QWidget):
     def __init__(self):
         # 初始化主界面
         super().__init__()
-        self.config = load_config('config.json')
+        self.config = w.load_config('config.json')
 
         self.activated = False
         self.current_mode = "Home"
@@ -53,7 +45,7 @@ class MainInterface(QWidget):
         nested_orientations = [Qt.Horizontal if o == "Horizontal" else Qt.Vertical for o in self.config['ui_settings']['nested_panel_orientations']]
         nested_fixed_panel = self.config['ui_settings']['nested_fixed_panel']
 
-        self.main_layout_widget = MainQWidget(
+        self.main_layout_widget = w.MainQWidget(
             self,
             self_color=self_color,
             colors=main_colors,
@@ -68,7 +60,7 @@ class MainInterface(QWidget):
         self.main_splitter_panel2 = self.main_splitter.get_panel2()
         
         # 嵌套的MainQWidget實例，用於設置panel2的內容
-        self.nested_widget = MainQWidget(
+        self.nested_widget = w.MainQWidget(
             self,
             self_color=self_color,
             colors=nested_colors,
@@ -111,7 +103,7 @@ class MainInterface(QWidget):
         fone_size = terminal_settings['font_size']
         background_color = terminal_settings['background_color']
 
-        self.terminal_widget = TerminalWidget(welcome_message=welcome_message, font_size=fone_size, background_color=background_color)
+        self.terminal_widget = w.TerminalWidget(welcome_message=welcome_message, font_size=fone_size, background_color=background_color)
 
         self.terminal_panel.clearAndAddWidget(self.terminal_widget)
 
@@ -124,7 +116,7 @@ class MainInterface(QWidget):
     
     def show_error(self, errorDialog_settings, title, message):
         background_color = errorDialog_settings["background_color"]
-        error_dialog = ErrorDialog(self, title=title, message=message, background_color=background_color)
+        error_dialog = w.ErrorDialog(self, title=title, message=message, background_color=background_color)
         error_dialog.exec_()  # Show the dialog modally
 
     def set_sider_bar(self, siderbar_settings=None, is_set=True, mode="Home"):
@@ -146,7 +138,7 @@ class MainInterface(QWidget):
         else:
             selectionMode = "single"
         
-        self.treeWidget = ConfigurableTree(callback=callback_function, selectionMode=selectionMode)
+        self.treeWidget = w.ConfigurableTree(callback=callback_function, selectionMode=selectionMode)
 
         if is_set:
             categories = siderbar_settings["settings_item"][mode]
@@ -156,11 +148,10 @@ class MainInterface(QWidget):
                 }
                 group = self.treeWidget.addGroup(group_name, extra_data)
                 for name, description in zip(group_info['name'], group_info['description']):
-                    widget = SettingsWidget(name, description)
+                    widget = w.SettingsWidget(name, description)
                     self.treeWidget.addItem(group, widget, name)
             
         self.sider_bar.clearAndAddWidget(self.treeWidget)
-
 
     def set_button_bar(self, bar, buttons_info):
         # 通用方法設置按鈕欄
@@ -169,7 +160,7 @@ class MainInterface(QWidget):
             return
         bar.removeAllWidgets()
         for button in buttons_info:
-            button_widget = ButtonWidget(
+            button_widget = w.ButtonWidget(
                 name=button['name'],
                 owner=button['owner'],
                 color=button['color'],
@@ -188,7 +179,7 @@ class MainInterface(QWidget):
 
     def get_text_display_panel(self, display_panel_text):
         # 獲取TextDisplayPanel實例
-        return TextDisplayPanel(
+        return w.TextDisplayPanel(
             title=display_panel_text['title'],
             content=display_panel_text['content'],
             background_color=display_panel_text['background_color'],
@@ -207,11 +198,10 @@ class MainInterface(QWidget):
         # 獲取樹狀結構的選擇狀態
         return self.treeWidget.get_treeWidget_selected()
 
-
     def create_detail_panel(self, mode, selected_items):
         # 创建详细设置面板
         print(f"Create detail panel for {mode} mode with selected items: {selected_items}")
-        dialog = ConfirmDialog("Confirmation", selected_items, self)
+        dialog = w.ConfirmDialog("Confirmation", selected_items, self)
         if dialog.exec_() == QDialog.Accepted:
             print("Confirmed:", dialog.get_selection())
             return True

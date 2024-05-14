@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PyQt5.QtGui import QFont, QColor
-from ColoredWidget import ColoredWidget
+from custom_widgets.ColoredWidget import ColoredWidget
 from PyQt5.QtCore import Qt
 
 class SettingsWidget(QWidget):

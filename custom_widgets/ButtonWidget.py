@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import Qt
-from ColoredWidget import ColoredWidget
+from custom_widgets.ColoredWidget import ColoredWidget
 
 class ButtonWidget(ColoredWidget):
     def __init__(

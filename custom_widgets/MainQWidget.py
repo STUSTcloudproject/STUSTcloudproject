@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QPushButton
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtCore import QSize, Qt
-from ContentSplitterWidget import ContentSplitterWidget
-from ColoredWidget import ColoredWidget
+from custom_widgets.ContentSplitterWidget import ContentSplitterWidget
+from custom_widgets.ColoredWidget import ColoredWidget
 
 class MainQWidget(QWidget):
     def __init__(
