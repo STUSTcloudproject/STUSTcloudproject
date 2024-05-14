@@ -13,19 +13,24 @@ class TextDisplayPanel(QWidget):
         self.initUI()
     
     def initUI(self):
-        # 设置整体布局
+        # Set overall layout
         layout = QVBoxLayout(self)
         self.setStyleSheet(f"background-color: {self.background_color};")
         
-        # 创建标题部件和设置
+        # Create title widget and set properties
         self.title_widget = QWidget(self)
         self.title_layout = QVBoxLayout(self.title_widget)
         self.title_label = QLabel(self.title, self.title_widget)
-        self.title_label.setStyleSheet(f"font-size: {self.title_font_size}; font-weight: bold; color: {self.font_color};")
+        self.title_label.setStyleSheet(f"""
+            font-size: {self.title_font_size};
+            font-weight: bold;
+            color: {self.font_color};
+            font-family: 'Consolas', 'Courier New', 'Lucida Console', monospace;
+        """)
         self.title_layout.addWidget(self.title_label)
         self.title_widget.setLayout(self.title_layout)
         
-        # 创建内容部件和设置
+        # Create content widget and set properties
         self.content_widget = QWidget(self)
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_text = QTextEdit(self.content_widget)
@@ -36,6 +41,7 @@ class TextDisplayPanel(QWidget):
             color: {self.font_color};
             border: none;
             font-size: {self.content_font_size};
+            font-family: 'Consolas', 'Courier New', 'Lucida Console', monospace;
         """)
         self.content_text.setMarkdown(self.content)
         self.content_layout.addWidget(self.content_text)
@@ -45,7 +51,7 @@ class TextDisplayPanel(QWidget):
         layout.addWidget(self.content_widget)
         self.setLayout(layout)
 
-# 主程序运行
+# Main program execution
 if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)

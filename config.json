@@ -119,23 +119,23 @@
             ]
         }
     },
-    "sidebar_settings": {
+    "siderbar_settings": {
         "settings_item": {
             "Home": {
 
             },
             "Record": {
-                "必選項目": {
+                "Required": {
                     "name": ["Record imgs", "Record rosbag", "Playback rosbag"],
                     "description": ["錄製rgbd文件", "錄製.bag文件", "回放.bag文件"]
                 }
             },
             "RunSystem": {
-                "必選項目": {
+                "Required": {
                     "name": ["Make", "Register", "Refine", "Integrate"],
                     "description": ["Make fragment", "Register fragments", "Refine registration", "Integrate scene"]
                 },
-                "可選項目": {
+                "Optional": {
                     "name": ["Slac", "Slac integrate", "Debug mode"],
                     "description": [" ", " ", " "]
                 }
@@ -268,5 +268,13 @@
             "content_font_size": "12pt"
         }
 
+    },
+    "terminal": {
+        "welcome_message": "Welcome to the terminal !",
+        "font_size": 20,
+        "background_color": "#252525"
+    },
+    "error_dialog": {
+        "background_color": "#1E1E1E"
     }
 }

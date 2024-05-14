@@ -7,9 +7,9 @@ class SettingsWidget(QWidget):
     def __init__(self, title, description, parent=None):
         super().__init__(parent)
         self.unselected_color = QColor(200, 200, 200)
-        self.selected_color = QColor(0, 120, 215)  # 亮蓝色
+        self.selected_color = QColor(0, 120, 215)  # Bright blue
         self.title = title
-        self.is_selected = False  # 初始状态未选中
+        self.is_selected = False  # Initial state is unselected
         self.setup_layout()
         self.setup_left_widget(title, description)
         self.setup_right_widget()
@@ -40,6 +40,7 @@ class SettingsWidget(QWidget):
         font = QFont()
         font.setPointSize(point_size)
         font.setBold(bold)
+        font.setFamily("Consolas, 'Courier New', 'Lucida Console', monospace")
         label.setFont(font)
         label.setStyleSheet(f"color: {color};")
         return label
