@@ -1,13 +1,16 @@
-import sys
-from PyQt5.QtWidgets import QApplication
-from ApplicationModel import ApplicationModel
-from ApplicationView import ApplicationView
-from ApplicationController import ApplicationController
+from Controller import Controller
+from Model import Model
+from View import View
+import pythoncom
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    model = ApplicationModel()
-    view = ApplicationView()
-    controller = ApplicationController(model, view)
-    view.show()
-    sys.exit(app.exec_())
+    # Initialize COM
+    pythoncom.CoInitialize()
+    try:
+        model = Model()
+        view = View()  # The controller will set the callback
+        controller = Controller(model, view)
+        controller.run()
+    finally:
+        # Uninitialize COM
+        pythoncom.CoUninitialize()
