@@ -23,6 +23,9 @@ class View:
                 realsense_selection=realsense_selection, 
                 selected_path=selected_path
                 )
+            
+        elif mode == "Stop_Record":
+            self.callback_to_controller(mode)
 
 
     def set_controller_callback(self, controller_callback):

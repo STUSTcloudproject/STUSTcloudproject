@@ -215,11 +215,11 @@ class MainInterface(QWidget):
         if mode == "Record":
             #如果selected_items裡面，Playback rosbag的Value為True，則顯示錯誤信息
             if selected_items["Playback rosbag"]:
-                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_controller, select_type="folder", enable_realsense_check=False,parent=self)
+                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_view, select_type="folder", enable_realsense_check=False,parent=self)
             else:
-                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_controller, select_type="folder", enable_realsense_check=True,parent=self)
+                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_view, select_type="folder", enable_realsense_check=True,parent=self)
         elif mode == "RunSystem":
-            dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_controller, select_type="File", enable_realsense_check=False,parent=self)
+            dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_view, select_type="File", enable_realsense_check=False,parent=self)
         
         if dialog is not None:
             if dialog.exec_() == QDialog.Accepted:
@@ -275,21 +275,21 @@ class MainInterface(QWidget):
                 if success:                  
                     self.set_terminal_message("start_bar", f"Send selected items to Controller: {self.current_mode} {selected_items_dict}")
                     self.set_terminal_message("start_bar", f"Selected Path: {selected_path}, Realsense Selection: {realsense_selection}")
-                    self.send_to_controller("send_selected_items", selected_items_dict=selected_items_dict, realsense_selection=realsense_selection, selected_path=selected_path)
+                    self.send_to_view("send_selected_items", selected_items_dict=selected_items_dict, realsense_selection=realsense_selection, selected_path=selected_path)
                     self.activated = True
             else:
                 self.activated = True
                 
                 self.set_terminal_message("start_bar", f"Send selected items to Controller: {self.current_mode} {selected_items_dict}")
-                self.send_to_controller("send_selected_items", selected_items_dict)
+                self.send_to_view("send_selected_items", selected_items_dict)
         else:
             self.set_terminal_message("start_bar", "ERROR! The system is already running.")
             self.show_error(self.config['error_dialog'], "Error", "The system is already running.")
 
-    def handle_stop_button(self, name):
+    def handle_stop_button(self):
         if self.activated:
             self.set_terminal_message("start_bar", "Stop the system.")
-            self.send_to_controller("Stop_Record")
+            self.send_to_view("Stop_Record")
             self.activated = False
 
     def check_selected_items(self, selected_items_dict):
@@ -303,7 +303,7 @@ class MainInterface(QWidget):
         
         return True
     
-    def send_to_controller(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None):
+    def send_to_view(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None):
         if self.callback_to_view is None:
             print("No callback function is set.")
             return
@@ -318,6 +318,9 @@ class MainInterface(QWidget):
             
         elif mode == "get_realsense_profiles":
             return self.callback_to_view("get_realsense_profiles")
+        
+        elif mode == "Stop_Record":
+            return self.callback_to_view("Stop_Record")
 
     def sizeHint(self):
         # 設置視窗大小

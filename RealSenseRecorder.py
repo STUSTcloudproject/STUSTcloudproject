@@ -123,6 +123,7 @@ class RealSenseRecorder:
                     continue
                 self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
                 self.color_image = np.asanyarray(color_frame.get_data())
+                print(1)
                 if self.args.record_imgs:
                     if frame_count == 0:
                         self.save_intrinsic_as_json(join(self.path_output, "camera_intrinsic.json"), color_frame)
@@ -167,3 +168,4 @@ if __name__ == "__main__":
     )
     recorder = RealSenseRecorder(args)
     recorder.start_record()  # Start recording in a new thread
+    
