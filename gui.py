@@ -256,11 +256,11 @@ class MainInterface(QWidget):
     def handle_start_bar_callback(self, name):
         self.set_terminal_message("start_bar", f"{name} button clicked.")
 
-        if name == "Start":
+        if name == "start":
             self.handle_start_button()
-        elif name == "Stop":
+        elif name == "stop":
             self.handle_stop_button()
-        elif name == "Record":
+        elif name == "secord":
             pass
 
     def handle_start_button(self):

@@ -21,7 +21,7 @@
             {
                 "name": "Home",
                 "owner": "activity_bar",
-                "icon": "None",
+                "icon": "icon\\home.png",
                 "color": "transparent",
                 "size": 80,
                 "callback": "callback"
@@ -29,7 +29,7 @@
             {
                 "name": "Record",
                 "owner": "activity_bar",
-                "icon": "None",
+                "icon": "icon\\camera.png",
                 "color": "transparent",
                 "size": 80,
                 "callback": "callback"
@@ -37,7 +37,7 @@
             {
                 "name": "RunSystem",
                 "owner": "activity_bar",
-                "icon": "None",
+                "icon": "icon\\runsystem.png",
                 "color": "transparent",
                 "size": 80,
                 "callback": "callback"
@@ -45,7 +45,7 @@
             {
                 "name": "View",
                 "owner": "activity_bar",
-                "icon": "None",
+                "icon": "icon\\view.png",
                 "color": "transparent",
                 "size": 80,
                 "callback": "callback"
@@ -57,25 +57,25 @@
             ],
             "Record": [
                 {
-                    "name": "Record",
+                    "name": "record",
                     "owner": "start_bar",
-                    "icon": "None",
+                    "icon": "icon\\record.png",
                     "color": "transparent",
                     "size": 60,
                     "callback": "callback"
                 },
                 {
-                    "name": "Stop",
+                    "name": "stop",
                     "owner": "start_bar",
-                    "icon": "None",
+                    "icon": "icon\\stop.png",
                     "color": "transparent",
                     "size": 60,
                     "callback": "callback"
                 },
                 {
-                    "name": "Start",
+                    "name": "start",
                     "owner": "start_bar",
-                    "icon": "None",
+                    "icon": "icon\\play.png",
                     "color": "transparent",
                     "size": 60,
                     "callback": "callback"
@@ -83,17 +83,17 @@
             ],
             "RunSystem": [
                 {
-                    "name": "Stop",
+                    "name": "stop",
                     "owner": "start_bar",
-                    "icon": "None",
+                    "icon": "icon\\stop.png",
                     "color": "transparent",
                     "size": 60,
                     "callback": "callback"
                 },
                 {
-                    "name": "Start",
+                    "name": "start",
                     "owner": "start_bar",
-                    "icon": "None",
+                    "icon": "icon\\play.png",
                     "color": "transparent",
                     "size": 60,
                     "callback": "callback"
@@ -101,17 +101,17 @@
             ],
             "View": [
                 {
-                    "name": "Stop",
+                    "name": "stop",
                     "owner": "start_bar",
-                    "icon": "None",
+                    "icon": "icon\\stop.png",
                     "color": "transparent",
                     "size": 60,
                     "callback": "callback"
                 },
                 {
-                    "name": "Start",
+                    "name": "start",
                     "owner": "start_bar",
-                    "icon": "None",
+                    "icon": "icon\\play.png",
                     "color": "transparent",
                     "size": 60,
                     "callback": "callback"
