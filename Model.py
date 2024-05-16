@@ -1,6 +1,6 @@
 from realsense_helper import get_profiles
 from RealSenseRecorder import RealSenseRecorder, Args
-import tool
+import tool 
 import os
 
 class Model:
@@ -25,12 +25,12 @@ class Model:
     def start_realsense_recorder(self, config_dict):
         if self.recorder:
             self.recorder.stop_record()
-
+        print(config_dict['selected_path'])
         args = Args(
             output_folder=config_dict['selected_path'],
-            record_rosbag=config_dict['mode'] == 'Record',
-            record_imgs=config_dict['mode'] == 'RunSystem',
-            playback_rosbag=config_dict['mode'] == 'View',
+            record_rosbag=config_dict['selected_items_dict']['Record rosbag'],
+            record_imgs=config_dict['selected_items_dict']['Record imgs'],
+            playback_rosbag=config_dict['selected_items_dict']['Playback rosbag'],
             overwrite=True,
             width=config_dict['realsense_selection'][0][0],
             height=config_dict['realsense_selection'][0][1],
