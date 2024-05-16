@@ -215,11 +215,11 @@ class MainInterface(QWidget):
         if mode == "Record":
             #如果selected_items裡面，Playback rosbag的Value為True，則顯示錯誤信息
             if selected_items["Playback rosbag"]:
-                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_view, select_type="folder", enable_realsense_check=False,parent=self)
+                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="folder", enable_realsense_check=False,parent=self)
             else:
-                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_view, select_type="folder", enable_realsense_check=True,parent=self)
+                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="folder", enable_realsense_check=True,parent=self)
         elif mode == "RunSystem":
-            dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.send_to_view, select_type="File", enable_realsense_check=False,parent=self)
+            dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="File", enable_realsense_check=False,parent=self)
         
         if dialog is not None:
             if dialog.exec_() == QDialog.Accepted:
@@ -235,6 +235,10 @@ class MainInterface(QWidget):
 
         owner = info["owner"]
         name = info["name"]
+        if "data" in info:
+            data = info["data"]
+        else:
+            data = None
 
         if owner == "activity_bar":
             self.handle_activity_bar_callback(name)
@@ -242,6 +246,8 @@ class MainInterface(QWidget):
             self.handle_configurable_tree_callback(name)
         elif owner == "start_bar":
             self.handle_start_bar_callback(name)
+        elif owner == "confirm_dialog":
+            return self.handel_confirm_dialog_callback(name, data)
 
     def handle_activity_bar_callback(self, name):
         self.set_terminal_message("activity_bar", f"{name} button clicked.")
@@ -303,7 +309,15 @@ class MainInterface(QWidget):
         
         return True
     
-    def send_to_view(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None):
+    def handel_confirm_dialog_callback(self, name, data):
+        if name == "check_realsense":
+            return self.send_to_view("get_realsense_profiles")
+        elif name == "check_dir":
+            return self.send_to_view("check_dir", data=data)
+        elif name == "check_file":
+            return self.send_to_view("check_file", data=data)
+
+    def send_to_view(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None, data=None):
         if self.callback_to_view is None:
             print("No callback function is set.")
             return
@@ -313,11 +327,16 @@ class MainInterface(QWidget):
                 self.current_mode, 
                 selected_items_dict=selected_items_dict, 
                 realsense_selection=realsense_selection, 
-                selected_path=selected_path
+                selected_path=selected_path,
+                data=data
                 )
             
         elif mode == "get_realsense_profiles":
             return self.callback_to_view("get_realsense_profiles")
+        elif mode == "check_dir":
+            return self.callback_to_view("check_dir", data=data)
+        elif mode == "check_file":
+            return self.callback_to_view("check_file", data=data)
         
         elif mode == "Stop_Record":
             return self.callback_to_view("Stop_Record")

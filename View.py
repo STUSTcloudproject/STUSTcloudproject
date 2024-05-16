@@ -12,7 +12,7 @@ class View:
         self.main_interface.show()
         sys.exit(self.app.exec_())
 
-    def gui_callback(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None):
+    def gui_callback(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None, data=None):
         print(f"GUI Callback: Mode: {mode}")
         if mode == "get_realsense_profiles":
             return self.callback_to_controller("get_realsense_profiles", selected_items_dict)
@@ -23,6 +23,10 @@ class View:
                 realsense_selection=realsense_selection, 
                 selected_path=selected_path
                 )
+        elif mode == "check_dir":
+            return self.callback_to_controller("check_dir", data=data)
+        elif mode == "check_file":
+            return self.callback_to_controller("check_file", data=data)
             
         elif mode == "Stop_Record":
             self.callback_to_controller(mode)
@@ -31,10 +35,11 @@ class View:
     def set_controller_callback(self, controller_callback):
         self.controller_callback = controller_callback
 
-    def callback_to_controller(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None):
+    def callback_to_controller(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None, data=None):
         return self.controller_callback(
             mode, 
             selected_items_dict=selected_items_dict, 
             realsense_selection=realsense_selection, 
-            selected_path=selected_path
+            selected_path=selected_path,
+            data=data
             )

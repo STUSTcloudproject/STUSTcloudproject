@@ -86,7 +86,7 @@ class ConfirmDialog(QDialog):
 
     def check_realsense_profiles(self):
         if self.callback:
-            self.matched_depth_profiles, self.selected_color_profiles = self.callback("get_realsense_profiles")
+            self.matched_depth_profiles, self.selected_color_profiles = self.callback({"name": "check_realsense", "owner": "confirm_dialog"})
             if (isinstance(self.matched_depth_profiles, list) and self.matched_depth_profiles and
                 isinstance(self.selected_color_profiles, list) and self.selected_color_profiles):
                 profiles_str = [self.format_profile(profile) for profile in self.matched_depth_profiles]
@@ -108,7 +108,7 @@ class ConfirmDialog(QDialog):
     def verify_path(self):
         path = self.path_input.text()
         if self.select_type == 'folder':
-            if os.path.isdir(path):
+            if self.callback({"name": "check_dir", "owner": "confirm_dialog", "data": path}):
                 self.selected_path_label.setText(f"Selected Path: {path}")
                 self.path_selected = True
                 self.selected_path = path
@@ -117,7 +117,7 @@ class ConfirmDialog(QDialog):
                 self.path_selected = False
                 self.selected_path = ''
         else:
-            if os.path.isfile(path):
+            if self.callback({"name": "check_file", "owner": "confirm_dialog", "data": path}):
                 self.selected_path_label.setText(f"Selected Path: {path}")
                 self.path_selected = True
                 self.selected_path = path
