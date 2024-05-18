@@ -349,7 +349,10 @@ class MainInterface(QWidget):
         self.set_terminal_message("activity_bar", f"{name} button clicked.")
         self.set_sider_bar(mode=name)
         self.set_start_bar(self.config['buttons']['start_bar'][name])
-        self.set_text_display_panel(name)
+        if name == "Record" and self.activated:
+            self.set_images_display_panel()
+        else:
+            self.set_text_display_panel(name)
         self.current_mode = name
 
     def handle_configurable_tree_callback(self, name):
