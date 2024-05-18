@@ -24,7 +24,7 @@ class ConfigurableTree(QTreeWidget):
                 color: white;
             }
         """)
-        
+
         self.callback = callback
         self.selectionMode = selectionMode
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -41,28 +41,23 @@ class ConfigurableTree(QTreeWidget):
     def addItem(self, parent, widget, data):
         item = QTreeWidgetItem(parent)
         self.setItemWidget(item, 0, widget)
-        # Store additional data in the item for retrieval
         item.setData(0, Qt.UserRole, data)
 
     def handleItemClick(self, item, column):
-        # 处理单击事件的方法
         custom_data = item.data(0, Qt.UserRole)
         if not isinstance(custom_data, dict):
             if self.callback:
                 self._emit_button_info(self.callback, custom_data)
 
     def toggleItemState(self, item, column):
-        # Retrieve stored data from the item
         custom_data = item.data(0, Qt.UserRole)
         if not isinstance(custom_data, dict):
             widget = self.itemWidget(item, 0)
-            #print(f"Double-clicked on item: {custom_data}")
             if self.selectionMode == 'single' and widget.get_selected() is False:
                 self.setAllItemsSelection(False)
             widget.toggle_selection()
 
     def setAllItemsSelection(self, selected):
-        """遍历所有 items 并设置其 widget 的选中状态"""
         iterator = QTreeWidgetItemIterator(self)
         while iterator.value():
             item = iterator.value()
@@ -71,21 +66,27 @@ class ConfigurableTree(QTreeWidget):
                 widget.toggle_selection(selected)
             iterator += 1
 
-    #定義一個獲取所有item選擇狀態的方法，返回一個字典，{get_title : get_selected}
     def get_treeWidget_selected(self):
-        # 遍历所有 items 并获取其 widget 的选中状态
         iterator = QTreeWidgetItemIterator(self)
         selected_items = {}
         while iterator.value():
             item = iterator.value()
             widget = self.itemWidget(item, 0)
             if widget and hasattr(widget, 'get_title') and hasattr(widget, 'get_selected'):
+                print(f"widget.get_title(): {widget.get_title()} widget.get_selected(): {widget.get_selected()}")
                 selected_items[widget.get_title()] = widget.get_selected()
             iterator += 1
         return selected_items
 
     def _emit_button_info(self, callback, custom_data):
-        # 發送按鈕信息
         info = {'name': custom_data, 'owner': "configurable_tree"}
-        callback(info)  # Call the callback with the info dictionary
+        callback(info)
 
+    def update_visibility_by_mode(self, mode):
+        iterator = QTreeWidgetItemIterator(self)
+        while iterator.value():
+            item = iterator.value()
+            data = item.data(0, Qt.UserRole)
+            if isinstance(data, dict) and "mode" in data:
+                item.setHidden(data["mode"] != mode)
+            iterator += 1

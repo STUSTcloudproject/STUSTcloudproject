@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PyQt5.QtGui import QFont, QColor
-from custom_widgets.ColoredWidget import ColoredWidget
 from PyQt5.QtCore import Qt
+from custom_widgets.ColoredWidget import ColoredWidget
 
 class SettingsWidget(QWidget):
     def __init__(self, title, description, parent=None):
@@ -61,3 +61,6 @@ class SettingsWidget(QWidget):
 
     def get_selected(self):
         return self.is_selected
+
+    def setWidgetVisibility(self, visible):
+        self.setVisible(visible)

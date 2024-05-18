@@ -34,6 +34,9 @@ class MainInterface(QWidget):
         self.display_panel = None
         self.terminal_panel = None
 
+        self.text_display_panels = {}
+        self.images_display_panel = None
+
         self.init_ui()
         self.init_item()
 
@@ -95,13 +98,36 @@ class MainInterface(QWidget):
     def init_item(self):
         # 設置按鈕欄和側邊欄的內容 
         self.set_activity_bar(self.config['buttons']['activity_bar'])
-        self.set_sider_bar(mode="Home")
+        self.set_sider_bar(mode="init")
         self.set_start_bar(self.config['buttons']['start_bar']['Home'])
         #增加對display_panel的設置
-        self.set_text_display_panel("Home")
+        self.initialize_display_panels()
         # 設置terminal
         self.set_terminal(self.config['terminal'])
 
+    def initialize_display_panels(self):
+        # 初始化所有显示面板
+        self.create_images_display_panel()
+        self.set_text_display_panel("Home")
+
+    def create_images_display_panel(self):
+        self.images_display_panel = w.ImagesDisplayPanel(
+            image1_array=None, 
+            image2_array=None,
+            parent=self.display_panel
+            )
+        self.display_panel.addToLayout(self.images_display_panel)
+        self.images_display_panel.setVisible(False)
+        print("Images display panel has been created.")
+
+    def get_or_create_text_display_panel(self, mode):
+        if mode not in self.text_display_panels:
+            display_panel = self.get_text_display_panel(self.config["display_text"][mode])
+            self.display_panel.addToLayout(display_panel)
+            self.text_display_panels[mode] = display_panel
+            display_panel.setVisible(False)
+        return self.text_display_panels[mode]
+        
     def set_terminal(self, terminal_settings):
         # 設置終端
         if self.terminal_panel is None:
@@ -133,8 +159,7 @@ class MainInterface(QWidget):
         error_dialog = w.ErrorDialog(self, title=title, message=message, background_color=background_color)
         error_dialog.exec_()  # Show the dialog modally
 
-    def set_sider_bar(self, is_set=True, mode="Home"):
-        # 設置側邊欄
+    def set_sider_bar(self, mode="Home"):
         if self.sider_bar is None:
             print(f"{self.sider_bar} is None")
             return
@@ -156,24 +181,32 @@ class MainInterface(QWidget):
         else:
             selection_mode = "single"
         
-        self.treeWidget = w.ConfigurableTree(
-            callback=callback_function, 
-            selectionMode=selection_mode,
-            parent=self.sider_bar
+        if mode == "init":
+            self.treeWidget = w.ConfigurableTree(
+                callback=callback_function, 
+                selectionMode=selection_mode,
+                parent=self.sider_bar
             )
-
-        if is_set:
-            categories = config_settings[mode]
-            for group_name, group_info in categories.items():
-                extra_data = {
-                    "description": ", ".join(group_info['description'])  # 将描述信息合并成一个字符串
-                }
-                group = self.treeWidget.addGroup(group_name, extra_data)
-                for name, description in zip(group_info['name'], group_info['description']):
-                    widget = w.SettingsWidget(name, description, parent=self.treeWidget)
-                    self.treeWidget.addItem(group, widget, name)
+            for mode_key, mode_settings in config_settings.items():
+                for group_name, group_info in mode_settings.items():
+                    extra_data = {
+                        "description": ", ".join(group_info['description']),
+                        "mode": mode_key
+                    }
+                    group = self.treeWidget.addGroup(group_name, extra_data)
+                    for name, description in zip(group_info['name'], group_info['description']):
+                        widget = w.SettingsWidget(name, description, parent=self.treeWidget)
+                        self.treeWidget.addItem(group, widget, name)
             
-        self.sider_bar.clearAndAddWidget(self.treeWidget)
+            self.sider_bar.addToLayout(self.treeWidget)
+            self.treeWidget.update_visibility_by_mode("Home")
+        else:
+            self.treeWidget.update_visibility_by_mode(mode)
+
+        if mode in config_single_modes:
+            self.treeWidget.selectionMode = "single"
+        elif mode in config_multiple_modes:
+            self.treeWidget.selectionMode = "multiple"
 
     def set_button_bar(self, bar, buttons_info):
         # 通用方法設置按鈕欄
@@ -213,16 +246,59 @@ class MainInterface(QWidget):
 
     def set_text_display_panel(self, mode):
         if self.display_panel is None:
-            print(f"{self.display_panel} is None")
+            print("display_panel is None")
             return
-        
-        display_panel = self.get_text_display_panel(self.config["display_text"][mode])
 
-        self.display_panel.clearAndAddWidget(display_panel)
+        text_display_panel = self.get_or_create_text_display_panel(mode)
+
+        print("Set text display panel")
+
+        self.images_display_panel.setVisible(False)
+
+        for panel in self.text_display_panels.values():
+            panel.setVisible(False)
+
+        text_display_panel.setVisible(True)
+
+    def set_images_display_panel(self):
+        if self.display_panel is None:
+            print("display_panel is None")
+            return
+
+        print("Set images display panel")
+
+        for panel in self.text_display_panels.values():
+            panel.setVisible(False)
+
+        self.images_display_panel.setVisible(True)
 
     def get_treeWidget_selected(self):
-        # 獲取樹狀結構的選擇狀態
-        return self.treeWidget.get_treeWidget_selected()
+        all_items = self.treeWidget.get_treeWidget_selected()
+        if all_items is None:
+            return {}
+        else:
+            current_mode_items = self.get_current_mode_items(all_items)
+
+        return current_mode_items
+
+    def get_current_mode_items(self, all_items):
+        current_mode_items = {}
+        
+        current_mode = self.current_mode
+
+        mode_settings = self.config['sidebar']['settings'].get(current_mode, {})
+        
+        required_items = mode_settings.get('Required', {}).get('name', [])
+        optional_items = mode_settings.get('Optional', {}).get('name', [])
+
+        all_mode_items = required_items + optional_items
+
+        for item_name in all_mode_items:
+            if item_name in all_items:
+                current_mode_items[item_name] = all_items[item_name]
+
+        return current_mode_items
+        
 
     def create_detail_panel(self, mode, selected_items):
         # 创建详细设置面板
@@ -291,7 +367,8 @@ class MainInterface(QWidget):
 
     def handle_start_button(self):
         if not self.activated:
-            selected_items_dict = self.get_treeWidget_selected()      
+            selected_items_dict = self.get_treeWidget_selected()
+            print(f"Selected items: {selected_items_dict}") 
 
             if selected_items_dict:
                 if not self.check_selected_items(selected_items_dict):
@@ -302,6 +379,7 @@ class MainInterface(QWidget):
                     self.set_terminal_message("start_bar", f"Send selected items to Controller: {self.current_mode} {selected_items_dict}")
                     self.set_terminal_message("start_bar", f"Selected Path: {selected_path}, Realsense Selection: {realsense_selection}")
                     self.send_to_view("send_selected_items", selected_items_dict=selected_items_dict, realsense_selection=realsense_selection, selected_path=selected_path)
+                    self.set_images_display_panel()
                     self.activated = True
             else:
                 self.activated = True
@@ -362,9 +440,14 @@ class MainInterface(QWidget):
             self.callback_to_view("stop_record")
 
     def recive_form_view(self, mode, data):
-        print(f"View Callback")
         if mode == "record_imgs":
-            pass
+            self.update_image_display_panel(data['depth_image'], data['color_image'])
+
+    def update_image_display_panel(self, image1_array, image2_array):
+        if self.images_display_panel is not None:
+            self.images_display_panel.update_images(image1_array, image2_array)
+        else:
+            print("Images display panel is None")
 
     def sizeHint(self):
         # 設置視窗大小

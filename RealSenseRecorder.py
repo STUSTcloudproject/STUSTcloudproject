@@ -139,7 +139,7 @@ class RealSenseRecorder:
                     print(f"Saved color + depth image {frame_count:06d}")
                     frame_count += 1
                 self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
-                self.display_images(self.depth_image, self.bg_removed)
+                #self.display_images(self.depth_image, self.bg_removed)
                 self.send_to_model("record_imgs", {"depth_image": self.depth_image, "color_image": self.bg_removed})
                 if cv2.waitKey(1) == 27:
                     cv2.destroyAllWindows()

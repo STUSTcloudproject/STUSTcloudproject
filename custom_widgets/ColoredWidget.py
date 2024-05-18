@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPalette
 from PyQt5.QtCore import Qt
 
 class ColoredWidget(QWidget):
-    def __init__(self, color = None, size=None, orientation=Qt.Horizontal, add_position=None, parent=None):
+    def __init__(self, color=None, size=None, orientation=Qt.Horizontal, add_position=None, parent=None):
         # 初始化ColoredWidget
         super().__init__(parent)
 
@@ -79,3 +79,10 @@ class ColoredWidget(QWidget):
         # 設置佈局的邊距和間距
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+
+    def setWidgetVisibility(self, visible):
+        # 設置佈局中所有widget的可見性
+        for i in range(self.layout.count()):
+            widget = self.layout.itemAt(i).widget()
+            if widget:
+                widget.setVisible(visible)
