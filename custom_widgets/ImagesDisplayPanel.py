@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtCore import Qt
 import numpy as np
 
 class ImagesDisplayPanel(QWidget):
@@ -11,6 +12,10 @@ class ImagesDisplayPanel(QWidget):
         # 创建两个 QLabel 用于显示图片
         self.image_label1 = QLabel(self)
         self.image_label2 = QLabel(self)
+
+        # 设置 QLabel 的对齐方式，防止调整大小时图像内容不一致
+        self.image_label1.setAlignment(Qt.AlignCenter)
+        self.image_label2.setAlignment(Qt.AlignCenter)
 
         # 添加 QLabel 到布局中
         self.layout.addWidget(self.image_label1)
@@ -42,6 +47,9 @@ class ImagesDisplayPanel(QWidget):
             label.setText("No image available")
 
     def update_images(self, image1_array, image2_array):
+        # 禁用窗口重绘
+        self.setUpdatesEnabled(False)
+        
         if self.image_label1 is not None:
             self.set_image(self.image_label1, image1_array)
         else:
@@ -51,3 +59,9 @@ class ImagesDisplayPanel(QWidget):
             self.set_image(self.image_label2, image2_array)
         else:
             print("image_label2 is None")
+        
+        # 启用窗口重绘
+        self.setUpdatesEnabled(True)
+        
+        # 强制重绘窗口
+        self.update()
