@@ -3,12 +3,12 @@ from PyQt5.QtWidgets import QApplication, QVBoxLayout, QWidget, QDialog
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import QSize, Qt
 import widgets as w
-
+from config_manager import load_config
 class MainInterface(QWidget):
     def __init__(self, callback_to_view=None):
         # 初始化主界面
         super().__init__()
-        self.config = w.load_config('config.json')
+        self.config = load_config('config.json')
         
         if callback_to_view is None:
             print("Callback is None in MainInterface constructor.")
@@ -42,17 +42,17 @@ class MainInterface(QWidget):
 
     def init_ui(self):
         # 主界面的配置，這裡直接使用tuple來傳遞顏色和尺寸
+        ui_config = self.config['ui']
+        self_color = ui_config['colors']['main_background']
+        main_colors = ui_config['colors']['panels']['main']
+        main_sizes = ui_config['sizes']['panels']['main']
+        main_orientations = [Qt.Horizontal if o == "Horizontal" else Qt.Vertical for o in ui_config['settings']['orientations']['main']]
+        main_fixed_panel = ui_config['settings']['fixed_panel']['main']
 
-        self_color = self.config['colors']['main_background']
-        main_colors = self.config['colors']['main_panel_backgrounds']
-        main_sizes = self.config['sizes']['main_panel_sizes']
-        main_orientations = [Qt.Horizontal if o == "Horizontal" else Qt.Vertical for o in self.config['ui_settings']['main_panel_orientations']]
-        main_fixed_panel = self.config['ui_settings']['main_fixed_panel']
-
-        nested_colors = self.config['colors']['nested_panel_backgrounds']
-        nested_sizes = self.config['sizes']['nested_panel_sizes']
-        nested_orientations = [Qt.Horizontal if o == "Horizontal" else Qt.Vertical for o in self.config['ui_settings']['nested_panel_orientations']]
-        nested_fixed_panel = self.config['ui_settings']['nested_fixed_panel']
+        nested_colors = ui_config['colors']['panels']['nested']
+        nested_sizes = ui_config['sizes']['panels']['nested']
+        nested_orientations = [Qt.Horizontal if o == "Horizontal" else Qt.Vertical for o in ui_config['settings']['orientations']['nested']]
+        nested_fixed_panel = ui_config['settings']['fixed_panel']['nested']
 
         self.main_layout_widget = w.MainQWidget(
             self,
@@ -95,10 +95,10 @@ class MainInterface(QWidget):
     def init_item(self):
         # 設置按鈕欄和側邊欄的內容 
         self.set_activity_bar(self.config['buttons']['activity_bar'])
-        self.set_sider_bar(siderbar_settings=self.config['siderbar_settings'], mode="Home")
+        self.set_sider_bar(mode="Home")
         self.set_start_bar(self.config['buttons']['start_bar']['Home'])
         #增加對display_panel的設置
-        self.set_text_display_panel(self.get_text_display_panel(self.config["display_panel_text"]["Home"]))
+        self.set_text_display_panel("Home")
         # 設置terminal
         self.set_terminal(self.config['terminal'])
 
@@ -109,10 +109,15 @@ class MainInterface(QWidget):
             return
         
         welcome_message = terminal_settings['welcome_message']
-        fone_size = terminal_settings['font_size']
+        font_size = terminal_settings['font_size']
         background_color = terminal_settings['background_color']
 
-        self.terminal_widget = w.TerminalWidget(welcome_message=welcome_message, font_size=fone_size, background_color=background_color)
+        self.terminal_widget = w.TerminalWidget(
+            welcome_message=welcome_message, 
+            font_size=font_size, 
+            background_color=background_color,
+            parent=self.terminal_panel
+            )
 
         self.terminal_panel.clearAndAddWidget(self.terminal_widget)
 
@@ -128,36 +133,44 @@ class MainInterface(QWidget):
         error_dialog = w.ErrorDialog(self, title=title, message=message, background_color=background_color)
         error_dialog.exec_()  # Show the dialog modally
 
-    def set_sider_bar(self, siderbar_settings=None, is_set=True, mode="Home"):
+    def set_sider_bar(self, is_set=True, mode="Home"):
         # 設置側邊欄
         if self.sider_bar is None:
             print(f"{self.sider_bar} is None")
             return
         
-        callback_function = None
-        if siderbar_settings is not None and 'callback' in siderbar_settings:
-            callback_function = getattr(self, siderbar_settings['callback'], None)
+        sidebar_config = self.config['sidebar']
+        config_settings = sidebar_config['settings']
+        config_callback = sidebar_config['callback']
+        config_single_modes = self.config['sidebar']['selection_mode']['single']
+        config_multiple_modes = self.config['sidebar']['selection_mode']['multiple']
 
-        single_modes = self.config['siderbar_settings']['selectionMode']['single']
-        multiple_modes = self.config['siderbar_settings']['selectionMode']['multiple']
-        if mode in single_modes:
-            selectionMode = "single"
-        elif mode in multiple_modes:
-            selectionMode = "multiple"
+        callback_function = None
+        if config_settings is not None and 'callback' in sidebar_config:
+            callback_function = getattr(self, config_callback, None)
+
+        if mode in config_single_modes:
+            selection_mode = "single"
+        elif mode in config_multiple_modes:
+            selection_mode = "multiple"
         else:
-            selectionMode = "single"
+            selection_mode = "single"
         
-        self.treeWidget = w.ConfigurableTree(callback=callback_function, selectionMode=selectionMode)
+        self.treeWidget = w.ConfigurableTree(
+            callback=callback_function, 
+            selectionMode=selection_mode,
+            parent=self.sider_bar
+            )
 
         if is_set:
-            categories = siderbar_settings["settings_item"][mode]
+            categories = config_settings[mode]
             for group_name, group_info in categories.items():
                 extra_data = {
                     "description": ", ".join(group_info['description'])  # 将描述信息合并成一个字符串
                 }
                 group = self.treeWidget.addGroup(group_name, extra_data)
                 for name, description in zip(group_info['name'], group_info['description']):
-                    widget = w.SettingsWidget(name, description)
+                    widget = w.SettingsWidget(name, description, parent=self.treeWidget)
                     self.treeWidget.addItem(group, widget, name)
             
         self.sider_bar.clearAndAddWidget(self.treeWidget)
@@ -175,7 +188,8 @@ class MainInterface(QWidget):
                 color=button['color'],
                 icon=button['icon'],
                 callback=getattr(self, button['callback']),
-                size=button['size']
+                size=button['size'],
+                parent=bar
             )
             bar.addToLayout(button_widget)
 
@@ -197,10 +211,13 @@ class MainInterface(QWidget):
             content_font_size=display_panel_text['content_font_size']
         )
 
-    def set_text_display_panel(self, display_panel):
+    def set_text_display_panel(self, mode):
         if self.display_panel is None:
             print(f"{self.display_panel} is None")
             return
+        
+        display_panel = self.get_text_display_panel(self.config["display_text"][mode])
+
         self.display_panel.clearAndAddWidget(display_panel)
 
     def get_treeWidget_selected(self):
@@ -215,11 +232,11 @@ class MainInterface(QWidget):
         if mode == "Record":
             #如果selected_items裡面，Playback rosbag的Value為True，則顯示錯誤信息
             if selected_items["Playback rosbag"]:
-                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="folder", enable_realsense_check=False,parent=self)
+                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="folder", enable_realsense_check=False, parent=self)
             else:
-                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="folder", enable_realsense_check=True,parent=self)
+                dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="folder", enable_realsense_check=True, parent=self)
         elif mode == "RunSystem":
-            dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="File", enable_realsense_check=False,parent=self)
+            dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="File", enable_realsense_check=False, parent=self)
         
         if dialog is not None:
             if dialog.exec_() == QDialog.Accepted:
@@ -249,15 +266,18 @@ class MainInterface(QWidget):
         elif owner == "confirm_dialog":
             return self.handel_confirm_dialog_callback(name, data)
 
+    def get_gui_callback(self):
+        return self.recive_form_view
+
     def handle_activity_bar_callback(self, name):
         self.set_terminal_message("activity_bar", f"{name} button clicked.")
-        self.set_sider_bar(siderbar_settings=self.config['siderbar_settings'], mode=name)
+        self.set_sider_bar(mode=name)
         self.set_start_bar(self.config['buttons']['start_bar'][name])
-        self.set_text_display_panel(self.get_text_display_panel(self.config["display_panel_text"][name]))
+        self.set_text_display_panel(name)
         self.current_mode = name
 
     def handle_configurable_tree_callback(self, name):
-        self.set_text_display_panel(self.get_text_display_panel(self.config["display_panel_text"][name]))
+        self.set_text_display_panel(name)
 
     def handle_start_bar_callback(self, name):
         self.set_terminal_message("start_bar", f"{name} button clicked.")
@@ -295,11 +315,11 @@ class MainInterface(QWidget):
     def handle_stop_button(self):
         if self.activated:
             self.set_terminal_message("start_bar", "Stop the system.")
-            self.send_to_view("Stop_Record")
+            self.send_to_view("stop_record")
             self.activated = False
 
     def check_selected_items(self, selected_items_dict):
-        required_item = self.config["siderbar_settings"]["settings_item"][self.current_mode]["Required"]["name"]
+        required_item = self.config["sidebar"]["settings"][self.current_mode]["Required"]["name"]
         
         #如果selected_items_dict裡面key為required_item的value皆為False，則顯示錯誤信息
         if all([selected_items_dict[key] == False for key in required_item]):
@@ -324,7 +344,7 @@ class MainInterface(QWidget):
         
         if mode == "send_selected_items":
             self.callback_to_view(
-                self.current_mode, 
+                "start_record", 
                 selected_items_dict=selected_items_dict, 
                 realsense_selection=realsense_selection, 
                 selected_path=selected_path,
@@ -338,8 +358,13 @@ class MainInterface(QWidget):
         elif mode == "check_file":
             return self.callback_to_view("check_file", data=data)
         
-        elif mode == "Stop_Record":
-            return self.callback_to_view("Stop_Record")
+        elif mode == "stop_record":
+            self.callback_to_view("stop_record")
+
+    def recive_form_view(self, mode, data):
+        print(f"View Callback")
+        if mode == "record_imgs":
+            pass
 
     def sizeHint(self):
         # 設置視窗大小
@@ -349,6 +374,7 @@ class MainInterface(QWidget):
         # 設置佈局的邊距和間距
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+
 if __name__ == "__main__":
     # 啟動應用程序
     app = QApplication(sys.argv)

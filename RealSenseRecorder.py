@@ -32,7 +32,7 @@ class Preset(IntEnum):
     MediumDensity = 5
 
 class RealSenseRecorder:
-    def __init__(self, args):
+    def __init__(self, args, callback=None):
         self.args = args
         self.pipeline = rs.pipeline()
         self.config = rs.config()
@@ -45,6 +45,14 @@ class RealSenseRecorder:
         self.depth_image = None
         self.color_image = None
         self.bg_removed = None
+
+        if callback:
+            self.callback = callback
+            print("Callback function provided")
+        else:
+            self.callback = None
+            print("No callback function provided")
+
         self.setup_folders()
         self.configure_streams()
 
@@ -123,7 +131,6 @@ class RealSenseRecorder:
                     continue
                 self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
                 self.color_image = np.asanyarray(color_frame.get_data())
-                print(1)
                 if self.args.record_imgs:
                     if frame_count == 0:
                         self.save_intrinsic_as_json(join(self.path_output, "camera_intrinsic.json"), color_frame)
@@ -133,12 +140,24 @@ class RealSenseRecorder:
                     frame_count += 1
                 self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
                 self.display_images(self.depth_image, self.bg_removed)
+                self.send_to_model("record_imgs", {"depth_image": self.depth_image, "color_image": self.bg_removed})
                 if cv2.waitKey(1) == 27:
                     cv2.destroyAllWindows()
                     break
         finally:
             self.pipeline.stop()
             self.is_running = False
+
+    def recive_from_model(self, mode, data=None):
+        if mode == "start_record":
+            self.start_record()
+        if mode == "stop_record":
+            self.stop_record()
+
+    def send_to_model(self, mode, data):
+        if self.callback:
+            if mode == "record_imgs":
+                self.callback(mode, data)
 
     @staticmethod
     def remove_background(depth_image, color_image, clipping_distance):

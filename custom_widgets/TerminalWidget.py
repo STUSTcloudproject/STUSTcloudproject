@@ -3,8 +3,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QVBoxLayo
 
 
 class TerminalWidget(QWidget):
-    def __init__(self, welcome_message="Welcome", font_size=12, background_color="#000000"):
-        super().__init__()
+    def __init__(self, welcome_message="Welcome", font_size=12, background_color="#000000", parent=None):
+        super().__init__(parent)
 
         self.layout = QVBoxLayout()
         self.console = QPlainTextEdit()

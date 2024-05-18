@@ -8,6 +8,5 @@ from custom_widgets.Text_display_panel import TextDisplayPanel
 from custom_widgets.ConfirmDialog import ConfirmDialog
 from custom_widgets.TerminalWidget import TerminalWidget
 from custom_widgets.ErrorDialog import ErrorDialog
-from custom_widgets.config_manager import load_config, get_orientation
 from custom_widgets.ContentSplitterWidget import ContentSplitterWidget
 from custom_widgets.ColoredWidget import ColoredWidget

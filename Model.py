@@ -6,25 +6,43 @@ import os
 class Model:
     def __init__(self):
         self.recorder = None
+        self.controller_callback = None
 
-    def callback_from_controller(self, config_dict):
+    def recive_from_realsense_recorder(self, mode, data):
+        if mode == 'record_imgs':
+            self.send_to_controller(mode, data)
+
+    def recive_from_controller(self, config_dict):
         if config_dict['mode'] == 'get_realsense_profiles':
             return self.get_realsense_profiles()
         elif config_dict['mode'] == 'check_dir' or config_dict['mode'] == 'check_file':
             return self.check_path(config_dict)
-        elif config_dict['mode'] == "Record":
-            self.start_realsense_recorder(config_dict)
-        elif config_dict['mode'] == 'Stop_Record':
-            self.stop_realsense_recorder()
+        elif config_dict['mode'] == "start_record":
+            self.send_to_realsense_recorder('start_record', data=config_dict)
+        elif config_dict['mode'] == 'stop_record':
+            self.send_to_realsense_recorder('stop_record')
             
+            
+    def send_to_controller(self, mode, data):
+        if mode == 'record_imgs':
+            self.controller_callback(mode, data)
+
+    def send_to_realsense_recorder(self, mode, data=None):
+        if mode == 'start_record':
+            self.start_realsense_recorder(mode, data)
+        elif mode == 'stop_record':
+            self.stop_realsense_recorder(mode)
+
+    def set_controller_callback(self, controller_callback):
+        self.controller_callback = controller_callback
 
     def get_realsense_profiles(self):
         color_profiles, depth_profiles = get_profiles()
         return tool.update_profile(color_profiles, depth_profiles)
 
-    def start_realsense_recorder(self, config_dict):
+    def start_realsense_recorder(self, mode, config_dict):
         if self.recorder:
-            self.recorder.stop_record()
+            self.recorder.recive_from_model('stop_record')
         print(config_dict['selected_path'])
         args = Args(
             output_folder=config_dict['selected_path'],
@@ -39,13 +57,12 @@ class Model:
             fps=config_dict['realsense_selection'][0][2]
         )
         
-        self.recorder = RealSenseRecorder(args)
-        self.recorder.start_record()
+        self.recorder = RealSenseRecorder(args, self.recive_from_realsense_recorder)
+        self.recorder.recive_from_model(mode)
 
-    def stop_realsense_recorder(self):
+    def stop_realsense_recorder(self, mode):
         if self.recorder:
-            self.recorder.stop_record()
-            self.recorder = None
+            self.recorder.recive_from_model(mode)
 
     def check_path(self, config_dict):
         check_type = config_dict['mode']
