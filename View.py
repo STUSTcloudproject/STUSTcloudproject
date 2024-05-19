@@ -17,7 +17,7 @@ class View:
         print(f"GUI Callback: Mode: {mode}")
         if mode == "get_realsense_profiles":
             return self.send_to_controller("get_realsense_profiles", selected_items_dict)
-        elif mode == "start_record":
+        elif mode == "start_preview":
             self.send_to_controller(
                 mode, 
                 selected_items_dict=selected_items_dict, 
@@ -29,7 +29,7 @@ class View:
         elif mode == "check_file":
             return self.send_to_controller("check_file", data=data)
             
-        elif mode == "stop_record":
+        elif mode == "stop_record" or mode == "start_record":
             self.send_to_controller(mode)
 
 

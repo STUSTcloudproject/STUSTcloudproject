@@ -17,10 +17,12 @@ class Model:
             return self.get_realsense_profiles()
         elif config_dict['mode'] == 'check_dir' or config_dict['mode'] == 'check_file':
             return self.check_path(config_dict)
-        elif config_dict['mode'] == "start_record":
-            self.send_to_realsense_recorder('start_record', data=config_dict)
+        elif config_dict['mode'] == "start_preview":
+            self.send_to_realsense_recorder('start_preview', data=config_dict)
         elif config_dict['mode'] == 'stop_record':
             self.send_to_realsense_recorder('stop_record')
+        elif config_dict['mode'] == 'start_record':
+            self.send_to_realsense_recorder('start_record')
             
             
     def send_to_controller(self, mode, data):
@@ -28,10 +30,12 @@ class Model:
             self.controller_callback(mode, data)
 
     def send_to_realsense_recorder(self, mode, data=None):
-        if mode == 'start_record':
-            self.start_realsense_recorder(mode, data)
+        if mode == 'start_preview':
+            self.start_realsense_preview(mode, data)
         elif mode == 'stop_record':
             self.stop_realsense_recorder(mode)
+        elif mode == 'start_record':
+            self.start_realsense_recorder(mode)
 
     def set_controller_callback(self, controller_callback):
         self.controller_callback = controller_callback
@@ -40,10 +44,9 @@ class Model:
         color_profiles, depth_profiles = get_profiles()
         return tool.update_profile(color_profiles, depth_profiles)
 
-    def start_realsense_recorder(self, mode, config_dict):
+    def start_realsense_preview(self, mode, config_dict):
         if self.recorder:
             self.recorder.recive_from_model('stop_record')
-        print(config_dict['selected_path'])
         args = Args(
             output_folder=config_dict['selected_path'],
             record_rosbag=config_dict['selected_items_dict']['Record rosbag'],
@@ -64,10 +67,13 @@ class Model:
         if self.recorder:
             self.recorder.recive_from_model(mode)
 
+    def start_realsense_recorder(self, mode):
+        if self.recorder:
+            self.recorder.recive_from_model(mode)
+
     def check_path(self, config_dict):
         check_type = config_dict['mode']
         path = config_dict['data']
-        print(f'check path {check_type} {path}')
         if check_type == 'check_file':
             if os.path.isfile(path):
                 return True

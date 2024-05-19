@@ -1,17 +1,15 @@
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-import argparse
+import threading
 from os import makedirs
-from os.path import exists, join, abspath
+from os.path import exists, join
 import shutil
 import json
 from enum import IntEnum
-import sys
-import threading
 
 class Args:
-    def __init__(self, output_folder, record_rosbag, record_imgs, playback_rosbag, overwrite, width, height, depth_fmt, color_fmt, fps):
+    def __init__(self, output_folder, record_rosbag, record_imgs, playback_rosbag, overwrite, width=640, height=480, depth_fmt=rs.format.z16, color_fmt=rs.format.rgb8, fps=30):
         self.output_folder = output_folder
         self.record_rosbag = record_rosbag
         self.record_imgs = record_imgs
@@ -41,6 +39,7 @@ class RealSenseRecorder:
         self.path_color = join(args.output_folder, "color")
         self.path_bag = join(args.output_folder, "realsense.bag")
         self.is_running = False
+        self.is_recording = False
         self.thread = None
         self.depth_image = None
         self.color_image = None
@@ -48,13 +47,11 @@ class RealSenseRecorder:
 
         if callback:
             self.callback = callback
-            print("Callback function provided")
         else:
             self.callback = None
-            print("No callback function provided")
 
         self.setup_folders()
-        self.configure_streams()
+        self.configure_streams(preview=True)
 
     def setup_folders(self):
         if self.args.record_imgs:
@@ -64,15 +61,14 @@ class RealSenseRecorder:
         if self.args.record_rosbag:
             self.handle_rosbag_file()
 
-    def configure_streams(self):
-        if self.args.record_imgs or self.args.record_rosbag:
-            print(f'Using the default profiles: \n  width : {self.args.width}, height : {self.args.height} depth_fmt : {self.args.depth_fmt} color_fmt : {self.args.color_fmt} fps : {self.args.fps}')
-            self.config.enable_stream(rs.stream.depth, self.args.width, self.args.height, self.args.depth_fmt, self.args.fps)
-            self.config.enable_stream(rs.stream.color, self.args.width, self.args.height, self.args.color_fmt, self.args.fps)
-            if self.args.record_rosbag:
-                self.config.enable_record_to_file(self.path_bag)
+    def configure_streams(self, preview=False):
         if self.args.playback_rosbag:
             self.config.enable_device_from_file(self.path_bag, repeat_playback=True)
+        else:
+            self.config.enable_stream(rs.stream.depth, self.args.width, self.args.height, self.args.depth_fmt, self.args.fps)
+            self.config.enable_stream(rs.stream.color, self.args.width, self.args.height, self.args.color_fmt, self.args.fps)
+            if not preview and self.args.record_rosbag:
+                self.config.enable_record_to_file(self.path_bag)
 
     @staticmethod
     def make_clean_folder(path_folder, overwrite=True):
@@ -99,30 +95,54 @@ class RealSenseRecorder:
                  'intrinsic_matrix': [intrinsics.fx, 0, 0, 0, intrinsics.fy, 0, intrinsics.ppx, intrinsics.ppy, 1]},
                 outfile, indent=4)
 
-    def start_record(self):
-        """启动录制线程"""
+    def start_preview(self):
+        """启动预览线程"""
         if not self.is_running:
             self.is_running = True
-            self.thread = threading.Thread(target=self.record)
+            self.thread = threading.Thread(target=self.preview)
             self.thread.start()
 
-    def stop_record(self):
-        """停止录制线程"""
+    def start_recording(self):
+        """启动录制"""
+        if self.is_running:
+            self.stop_pipeline()  # Stop the current pipeline before reconfiguring streams
+        self.is_recording = True
+        self.configure_streams(preview=False)  # Reconfigure streams for recording
+        self.start_pipeline()
+
+    def stop_recording(self):
+        """停止录制"""
+        self.is_recording = False
+
+    def stop_pipeline(self):
+        """停止管道"""
         if self.is_running:
             self.is_running = False
-            self.thread.join()
+            try:
+                self.pipeline.stop()
+            except RuntimeError as e:
+                print(f"Error stopping pipeline: {e}")
 
-    def record(self):
-        profile = self.pipeline.start(self.config)
-        depth_sensor = profile.get_device().first_depth_sensor()
-        if self.args.record_rosbag or self.args.record_imgs:
-            depth_sensor.set_option(rs.option.visual_preset, Preset.HighAccuracy)
-        depth_scale = depth_sensor.get_depth_scale()
-        clipping_distance = 3 / depth_scale  # 3 meters
-        align = rs.align(rs.stream.color)
-        frame_count = 0
+    def start_pipeline(self):
+        """启动管道"""
+        self.is_running = True
+        self.thread = threading.Thread(target=self.record)
+        self.thread.start()
+
+    def stop_preview(self):
+        """停止预览线程"""
+        self.stop_pipeline()
+
+    def preview(self):
         try:
-            while self.is_running:  # Use self.is_running instead of True for controlled exit
+            profile = self.pipeline.start(self.config)
+            depth_sensor = profile.get_device().first_depth_sensor()
+            if self.args.record_rosbag or self.args.record_imgs:
+                depth_sensor.set_option(rs.option.visual_preset, Preset.HighAccuracy)
+            depth_scale = depth_sensor.get_depth_scale()
+            clipping_distance = 3 / depth_scale  # 3 meters
+            align = rs.align(rs.stream.color)
+            while self.is_running:
                 frames = self.pipeline.wait_for_frames()
                 aligned_frames = align.process(frames)
                 aligned_depth_frame = aligned_frames.get_depth_frame()
@@ -131,28 +151,63 @@ class RealSenseRecorder:
                     continue
                 self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
                 self.color_image = np.asanyarray(color_frame.get_data())
-                if self.args.record_imgs:
-                    if frame_count == 0:
-                        self.save_intrinsic_as_json(join(self.path_output, "camera_intrinsic.json"), color_frame)
-                    cv2.imwrite(f"{self.path_depth}/{frame_count:06d}.png", self.depth_image)
-                    cv2.imwrite(f"{self.path_color}/{frame_count:06d}.jpg", self.color_image)
-                    print(f"Saved color + depth image {frame_count:06d}")
-                    frame_count += 1
                 self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
-                #self.display_images(self.depth_image, self.bg_removed)
                 self.send_to_model("record_imgs", {"depth_image": self.depth_image, "color_image": self.bg_removed})
                 if cv2.waitKey(1) == 27:
                     cv2.destroyAllWindows()
                     break
+        except RuntimeError as e:
+            print(f"Error during preview: {e}")
         finally:
-            self.pipeline.stop()
-            self.is_running = False
+            if self.is_running:
+                self.pipeline.stop()
+                self.is_running = False
+
+    def record(self):
+        try:
+            profile = self.pipeline.start(self.config)
+            depth_sensor = profile.get_device().first_depth_sensor()
+            if self.args.record_rosbag or self.args.record_imgs:
+                depth_sensor.set_option(rs.option.visual_preset, Preset.HighAccuracy)
+            depth_scale = depth_sensor.get_depth_scale()
+            clipping_distance = 3 / depth_scale  # 3 meters
+            align = rs.align(rs.stream.color)
+            frame_count = 0
+            while self.is_running:
+                frames = self.pipeline.wait_for_frames()
+                aligned_frames = align.process(frames)
+                aligned_depth_frame = aligned_frames.get_depth_frame()
+                color_frame = aligned_frames.get_color_frame()
+                if not aligned_depth_frame or not color_frame:
+                    continue
+                self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
+                self.color_image = np.asanyarray(color_frame.get_data())
+                if self.is_recording and self.args.record_imgs:
+                    if frame_count == 0:
+                        self.save_intrinsic_as_json(join(self.path_output, "camera_intrinsic.json"), color_frame)
+                    cv2.imwrite(f"{self.path_depth}/{frame_count:06d}.png", self.depth_image)
+                    cv2.imwrite(f"{self.path_color}/{frame_count:06d}.jpg", self.color_image)
+                    frame_count += 1
+                self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
+                self.send_to_model("record_imgs", {"depth_image": self.depth_image, "color_image": self.bg_removed})
+                if cv2.waitKey(1) == 27:
+                    cv2.destroyAllWindows()
+                    break
+        except RuntimeError as e:
+            print(f"Error during recording: {e}")
+        finally:
+            if self.is_running:
+                self.pipeline.stop()
+                self.is_running = False
 
     def recive_from_model(self, mode, data=None):
-        if mode == "start_record":
-            self.start_record()
-        if mode == "stop_record":
-            self.stop_record()
+        if mode == "start_preview":
+            self.start_preview()
+        elif mode == "start_record":
+            self.start_recording()
+        elif mode == "stop_record":
+            self.stop_recording()
+            self.stop_preview()
 
     def send_to_model(self, mode, data):
         if self.callback:
@@ -169,22 +224,6 @@ class RealSenseRecorder:
     def display_images(depth_image, bg_removed):
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.09), cv2.COLORMAP_JET)
         images = np.hstack((bg_removed, depth_colormap))
-        cv2.namedWindow('Recorder Realsense', cv2.WINDOW_AUTOSIZE)
-        cv2.imshow('Recorder Realsense', images)
-
-if __name__ == "__main__":
-    args = Args(
-    output_folder='E:\\O3d_cuda\\Open3D\\examples\\python\\reconstruction_system\\sensors\\bag',
-    record_rosbag=True,
-    record_imgs=False,
-    playback_rosbag=False,
-    overwrite=True,
-    width=640,
-    height=480,
-    depth_fmt=rs.format.z16,
-    color_fmt=rs.format.rgb8,
-    fps=30
-    )
-    recorder = RealSenseRecorder(args)
-    recorder.start_record()  # Start recording in a new thread
-    
+        cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
+        cv2.imshow('Align Example', images)
+        cv2.waitKey(1)

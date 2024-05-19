@@ -7,7 +7,7 @@ class Controller:
 
     def recive_from_view(self, mode, selected_items_dict=None, realsense_selection=None, selected_path=None, data=None):
         # 統一處理不同模式的調用
-        if mode in ["get_realsense_profiles", "start_record", "stop_record", "check_dir", "check_file"]:
+        if mode in ["get_realsense_profiles", "start_preview", "stop_record", "start_record", "check_dir", "check_file"]:
             if realsense_selection == None:
                 #這個空列表是為了避免在沒有選擇realsense的情況下出現錯誤
                 realsense_selection = [[0, 0, 0, 0], [0, 0, 0, 0]]

@@ -118,7 +118,6 @@ class MainInterface(QWidget):
             )
         self.display_panel.addToLayout(self.images_display_panel)
         self.images_display_panel.setVisible(False)
-        print("Images display panel has been created.")
 
     def get_or_create_text_display_panel(self, mode):
         if mode not in self.text_display_panels:
@@ -251,8 +250,6 @@ class MainInterface(QWidget):
 
         text_display_panel = self.get_or_create_text_display_panel(mode)
 
-        print("Set text display panel")
-
         self.images_display_panel.setVisible(False)
 
         for panel in self.text_display_panels.values():
@@ -264,8 +261,6 @@ class MainInterface(QWidget):
         if self.display_panel is None:
             print("display_panel is None")
             return
-
-        print("Set images display panel")
 
         for panel in self.text_display_panels.values():
             panel.setVisible(False)
@@ -365,13 +360,12 @@ class MainInterface(QWidget):
             self.handle_start_button()
         elif name == "stop":
             self.handle_stop_button()
-        elif name == "secord":
-            pass
+        elif name == "record":
+            self.handle_record_button()
 
     def handle_start_button(self):
         if not self.activated:
             selected_items_dict = self.get_treeWidget_selected()
-            print(f"Selected items: {selected_items_dict}") 
 
             if selected_items_dict:
                 if not self.check_selected_items(selected_items_dict):
@@ -398,6 +392,11 @@ class MainInterface(QWidget):
             self.set_terminal_message("start_bar", "Stop the system.")
             self.send_to_view("stop_record")
             self.activated = False
+    
+    def handle_record_button(self):
+        if self.activated:
+            self.set_terminal_message("start_bar", "Start record")
+            self.send_to_view("start_record")
 
     def check_selected_items(self, selected_items_dict):
         required_item = self.config["sidebar"]["settings"][self.current_mode]["Required"]["name"]
@@ -425,7 +424,7 @@ class MainInterface(QWidget):
         
         if mode == "send_selected_items":
             self.callback_to_view(
-                "start_record", 
+                "start_preview", 
                 selected_items_dict=selected_items_dict, 
                 realsense_selection=realsense_selection, 
                 selected_path=selected_path,
@@ -441,6 +440,8 @@ class MainInterface(QWidget):
         
         elif mode == "stop_record":
             self.callback_to_view("stop_record")
+        elif mode == "start_record":
+            self.callback_to_view("start_record")
 
     def recive_form_view(self, mode, data):
         if mode == "record_imgs":
