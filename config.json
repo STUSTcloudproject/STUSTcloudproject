@@ -158,117 +158,117 @@
     },
     "display_text": {
         "Home": {
-            "title": "Home",
-            "content": "Home",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Record": {
-            "title": "Record",
-            "content": "Record",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "RunSystem": {
-            "title": "RunSystem",
-            "content": "RunSystem",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "View": {
-            "title": "View",
-            "content": "View",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Record imgs": {
-            "title": "Record imgs",
-            "content": "Record imgs",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Record rosbag": {
-            "title": "Record rosbag",
-            "content": "Record rosbag",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Playback rosbag": {
-            "title": "Playback rosbag",
-            "content": "Playback rosbag",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Make": {
-            "title": "Make",
-            "content": "Make",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Register": {
-            "title": "Register",
-            "content": "Register",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Refine": {
-            "title": "Refine",
-            "content": "Refine",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Integrate": {
-            "title": "Integrate",
-            "content": "Integrate",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Slac": {
-            "title": "Slac",
-            "content": "Slac",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Slac integrate": {
-            "title": "Slac integrate",
-            "content": "Slac integrate",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        },
-        "Debug mode": {
-            "title": "Debug mode",
-            "content": "Debug mode",
-            "background_color": "#1E1E1E",
-            "font_color": "#DCDCDC",
-            "title_font_size": "24pt",
-            "content_font_size": "12pt"
-        }
+      "title": "Home",
+      "content": "### 應用說明\n\n應用涵蓋從數據獲取、數據處理與模型可視化，使用Open3D庫來處理數據。\n\n應用包含以下功能：\n\n- **Record** : 數據獲取\n\n- **RunSystem** : 數據處理\n\n- **View** : 模型可視化\n",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Record": {
+      "title": "Record",
+      "content": "在 Record 模式下用戶可以錄製各種類型的數據，包括圖像和.bag文件。它包括以下小主題：\n- **Record imgs**: 錄製RGBD圖像\n- **Record rosbag**: 錄製.bag文件\n- **Playback rosbag**: 回放.bag文件",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "RunSystem": {
+      "title": "RunSystem",
+      "content": "在 RunSystem 模式下用戶可以進行點雲數據處理，包括以下小主題：\n- **Make**: 製作點雲碎片\n- **Register**: 註冊點雲碎片\n- **Refine**: 細化註冊的點雲碎片\n- **Integrate**: 整合點雲場景\n- **Slac**: SLAC處理\n- **Slac integrate**: SLAC整合\n- **Debug mode**: 調試模式",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "View": {
+      "title": "View",
+      "content": "在 View 模式下用戶可以查看錄製和處理的點雲數據。用戶可以選擇要查看的數據集並進行瀏覽和分析。這個模式沒有子主題。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Record imgs": {
+      "title": "Record imgs",
+      "content": "此功能允許用戶錄製RGBD圖像。用戶可以選擇攝像頭設置並開始錄製。錄製過程中會顯示實時圖像，以便用戶確認圖像質量。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Record rosbag": {
+      "title": "Record rosbag",
+      "content": "此功能允許用戶錄製.bag文件，這是一種常見的ROS數據包格式。用戶可以設置錄製參數並開始錄製，錄製過程中會顯示實時數據流。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Playback rosbag": {
+      "title": "Playback rosbag",
+      "content": "此功能允許用戶回放之前錄製的.bag文件。用戶可以選擇要回放的文件並控制回放速度和時間。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Make": {
+      "title": "Make",
+      "content": "此功能允許用戶製作點雲碎片。用戶可以選擇原始數據並開始製作過程，生成的碎片將保存到指定位置。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Register": {
+      "title": "Register",
+      "content": "此功能允許用戶註冊點雲碎片，使它們對齊並合併。用戶可以選擇要註冊的碎片並設置對齊參數。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Refine": {
+      "title": "Refine",
+      "content": "此功能允許用戶細化註冊的點雲碎片，提升對齊精度。用戶可以調整參數以獲得最佳結果。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Integrate": {
+      "title": "Integrate",
+      "content": "此功能允許用戶整合多個點雲場景，生成完整的3D模型。用戶可以選擇要整合的場景並設置相關參數。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Slac": {
+      "title": "Slac",
+      "content": "此功能允許用戶進行 SLAC（Sparse Localized Agnostic Consistency） 處理，優化點雲數據的一致性。用戶可以設置處理參數並開始SLAC處理。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Slac integrate": {
+      "title": "Slac integrate",
+      "content": "此功能允許用戶整合 SLAC 處理的結果，生成一致性的3D模型。用戶可以選擇要整合的SLAC結果並設置相關參數。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    },
+    "Debug mode": {
+      "title": "Debug mode",
+      "content": "此功能允許用戶進行調試操作，檢查和修復數據處理過程中的問題。用戶可以設置調試參數並查看調試信息。",
+      "background_color": "#1E1E1E",
+      "font_color": "#DCDCDC",
+      "title_font_size": "24pt",
+      "content_font_size": "12pt"
+    }
     },
     "terminal": {
         "welcome_message": "Welcome to the terminal !",
