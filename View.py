@@ -48,3 +48,5 @@ class View:
     def recive_from_controller(self, mode, data):
         if mode == "record_imgs":
             self.send_to_gui("record_imgs", data)
+        elif mode == "show_error":
+            self.send_to_gui("show_error", data)

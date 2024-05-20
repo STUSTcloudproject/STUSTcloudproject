@@ -54,85 +54,130 @@ class RealSenseRecorder:
         self.configure_streams(preview=True)
 
     def setup_folders(self):
-        if self.args.record_imgs:
-            self.make_clean_folder(self.path_output, self.args.overwrite)
-            self.make_clean_folder(self.path_depth, self.args.overwrite)
-            self.make_clean_folder(self.path_color, self.args.overwrite)
-        if self.args.record_rosbag:
-            self.handle_rosbag_file()
+        try:
+            if self.args.record_imgs:
+                self.make_clean_folder(self.path_output, self.args.overwrite)
+                self.make_clean_folder(self.path_depth, self.args.overwrite)
+                self.make_clean_folder(self.path_color, self.args.overwrite)
+            if self.args.record_rosbag:
+                self.handle_rosbag_file()
+        except Exception as e:
+            print(f"Error setting up folders: {e}")
+            self.send_to_model("show_error", {"title": "Error setting up folders", "message": str(e)})
 
     def configure_streams(self, preview=False):
-        if self.args.playback_rosbag:
-            self.config.enable_device_from_file(self.path_bag, repeat_playback=True)
-        else:
-            self.config.enable_stream(rs.stream.depth, self.args.width, self.args.height, self.args.depth_fmt, self.args.fps)
-            self.config.enable_stream(rs.stream.color, self.args.width, self.args.height, self.args.color_fmt, self.args.fps)
-            if not preview and self.args.record_rosbag:
-                self.config.enable_record_to_file(self.path_bag)
+        try:
+            if self.args.playback_rosbag:
+                self.config.enable_device_from_file(self.path_bag, repeat_playback=True)
+            else:
+                self.config.enable_stream(rs.stream.depth, self.args.width, self.args.height, self.args.depth_fmt, self.args.fps)
+                self.config.enable_stream(rs.stream.color, self.args.width, self.args.height, self.args.color_fmt, self.args.fps)
+                if not preview and self.args.record_rosbag:
+                    self.config.enable_record_to_file(self.path_bag)
+        except Exception as e:
+            print(f"Error configuring streams: {e}")
+            self.send_to_model("show_error", {"title": "Error configuring streams", "message": str(e)})
 
     @staticmethod
     def make_clean_folder(path_folder, overwrite=True):
-        if not exists(path_folder):
-            makedirs(path_folder)
-        else:
-            if overwrite:
-                shutil.rmtree(path_folder)
+        try:
+            if not exists(path_folder):
                 makedirs(path_folder)
             else:
-                exit()
+                if overwrite:
+                    shutil.rmtree(path_folder)
+                    makedirs(path_folder)
+                else:
+                    exit()
+        except Exception as e:
+            print(f"Error making clean folder: {e}")
+            raise
 
     def handle_rosbag_file(self, overwrite=True):
-        if exists(self.path_bag):
-            if overwrite == False:
-                exit()
+        try:
+            if exists(self.path_bag):
+                if not overwrite:
+                    exit()
+        except Exception as e:
+            print(f"Error handling rosbag file: {e}")
+            self.send_to_model("show_error", {"title": "Error handling rosbag file", "message": str(e)})
 
     @staticmethod
     def save_intrinsic_as_json(filename, frame):
-        intrinsics = frame.profile.as_video_stream_profile().intrinsics
-        with open(filename, 'w') as outfile:
-            json.dump(
-                {'width': intrinsics.width, 'height': intrinsics.height,
-                 'intrinsic_matrix': [intrinsics.fx, 0, 0, 0, intrinsics.fy, 0, intrinsics.ppx, intrinsics.ppy, 1]},
-                outfile, indent=4)
+        try:
+            intrinsics = frame.profile.as_video_stream_profile().intrinsics
+            with open(filename, 'w') as outfile:
+                json.dump(
+                    {'width': intrinsics.width, 'height': intrinsics.height,
+                     'intrinsic_matrix': [intrinsics.fx, 0, 0, 0, intrinsics.fy, 0, intrinsics.ppx, intrinsics.ppy, 1]},
+                    outfile, indent=4)
+        except Exception as e:
+            print(f"Error saving intrinsic as JSON: {e}")
+            raise
 
     def start_preview(self):
         """启动预览线程"""
         if not self.is_running:
-            self.is_running = True
-            self.thread = threading.Thread(target=self.preview)
-            self.thread.start()
+            try:
+                self.is_running = True
+                self.thread = threading.Thread(target=self.preview)
+                self.thread.start()
+            except Exception as e:
+                print(f"Error starting preview thread: {e}")
+                self.send_to_model("show_error", {"title": "Error starting preview thread", "message": str(e)})
 
     def start_recording(self):
         """启动录制"""
-        if not self.args.playback_rosbag:
-            if self.is_running:
-                self.stop_pipeline()  # Stop the current pipeline before reconfiguring streams
-            self.is_recording = True
-            self.configure_streams(preview=False)  # Reconfigure streams for recording
-            self.start_pipeline()
+        try:
+            if not self.args.playback_rosbag:
+                if self.is_running:
+                    self.stop_pipeline()  # Stop the current pipeline before reconfiguring streams
+                self.is_recording = True
+                self.configure_streams(preview=False)  # Reconfigure streams for recording
+                self.start_pipeline()
+        except Exception as e:
+            print(f"Error starting recording: {e}")
+            self.send_to_model("show_error", {"title": "Error starting recording", "message": str(e)})
 
     def stop_recording(self):
         """停止录制"""
-        self.is_recording = False
+        try:
+            self.is_recording = False
+        except Exception as e:
+            print(f"Error stopping recording: {e}")
+            self.send_to_model("show_error", {"title": "Error stopping recording", "message": str(e)})
 
     def stop_pipeline(self):
         """停止管道"""
-        if self.is_running:
-            self.is_running = False
-            try:
-                self.pipeline.stop()
-            except RuntimeError as e:
-                print(f"Error stopping pipeline: {e}")
+        try:
+            if self.is_running:
+                self.is_running = False
+                try:
+                    self.pipeline.stop()
+                except RuntimeError as e:
+                    print(f"Error stopping pipeline: {e}")
+                    self.send_to_model("show_error", {"title": "Error stopping pipeline", "message": str(e)})
+        except Exception as e:
+            print(f"Error in stop_pipeline: {e}")
+            self.send_to_model("show_error", {"title": "Error in stop_pipeline", "message": str(e)})
 
     def start_pipeline(self):
         """启动管道"""
-        self.is_running = True
-        self.thread = threading.Thread(target=self.record)
-        self.thread.start()
+        try:
+            self.is_running = True
+            self.thread = threading.Thread(target=self.record)
+            self.thread.start()
+        except Exception as e:
+            print(f"Error starting pipeline: {e}")
+            self.send_to_model("show_error", {"title": "Error starting pipeline", "message": str(e)})
 
     def stop_preview(self):
         """停止预览线程"""
-        self.stop_pipeline()
+        try:
+            self.stop_pipeline()
+        except Exception as e:
+            print(f"Error stopping preview: {e}")
+            self.send_to_model("show_error", {"title": "Error stopping preview", "message": str(e)})
 
     def preview(self):
         try:
@@ -159,10 +204,15 @@ class RealSenseRecorder:
                     break
         except RuntimeError as e:
             print(f"Error during preview: {e}")
+            self.send_to_model("show_error", {"title": "Error during preview", "message": str(e)})
         finally:
             if self.is_running:
-                self.pipeline.stop()
-                self.is_running = False
+                try:
+                    self.pipeline.stop()
+                    self.is_running = False
+                except Exception as e:
+                    print(f"Error stopping pipeline in preview: {e}")
+                    self.send_to_model("show_error", {"title": "Error stopping pipeline in preview", "message": str(e)})
 
     def record(self):
         try:
@@ -196,35 +246,59 @@ class RealSenseRecorder:
                     break
         except RuntimeError as e:
             print(f"Error during recording: {e}")
+            self.send_to_model("show_error", {"title": "Error during recording", "message": str(e)})
         finally:
-            if self.is_running:
-                self.pipeline.stop()
-                self.is_running = False
+            try:
+                if self.is_running:
+                    self.pipeline.stop()
+                    self.is_running = False
+            except Exception as e:
+                print(f"Error stopping pipeline in record: {e}")
+                self.send_to_model("show_error", {"title": "Error stopping pipeline in record", "message": str(e)})
 
     def recive_from_model(self, mode, data=None):
-        if mode == "start_preview":
-            self.start_preview()
-        elif mode == "start_record":
-            self.start_recording()
-        elif mode == "stop_record":
-            self.stop_recording()
-            self.stop_preview()
+        try:
+            if mode == "start_preview":
+                self.start_preview()
+            elif mode == "start_record":
+                self.start_recording()
+            elif mode == "stop_record":
+                self.stop_recording()
+                self.stop_preview()
+        except Exception as e:
+            print(f"Error receiving from model: {e}")
+            self.send_to_model("show_error", {"title": "Error receiving from model", "message": str(e)})
 
     def send_to_model(self, mode, data):
         if self.callback:
-            if mode == "record_imgs":
-                self.callback(mode, data)
+            try:
+                if mode == "record_imgs":
+                    self.callback(mode, data)
+                elif mode == "show_error":
+                    self.callback(mode, data)
+            except Exception as e:
+                print(f"Error sending to model: {e}")
+                if mode != "show_error":  # 防止遞歸調用
+                    self.callback("show_error", {"title": "Error sending to model", "message": str(e)})
 
     @staticmethod
     def remove_background(depth_image, color_image, clipping_distance):
-        grey_color = 153
-        depth_image_3d = np.dstack((depth_image, depth_image, depth_image))
-        return np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), grey_color, color_image)
+        try:
+            grey_color = 153
+            depth_image_3d = np.dstack((depth_image, depth_image, depth_image))
+            return np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), grey_color, color_image)
+        except Exception as e:
+            print(f"Error removing background: {e}")
+            raise
 
     @staticmethod
     def display_images(depth_image, bg_removed):
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.09), cv2.COLORMAP_JET)
-        images = np.hstack((bg_removed, depth_colormap))
-        cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
-        cv2.imshow('Align Example', images)
-        cv2.waitKey(1)
+        try:
+            depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.09), cv2.COLORMAP_JET)
+            images = np.hstack((bg_removed, depth_colormap))
+            cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
+            cv2.imshow('Align Example', images)
+            cv2.waitKey(1)
+        except Exception as e:
+            print(f"Error displaying images: {e}")
+            raise

@@ -22,6 +22,8 @@ class Controller:
     def recive_from_model(self, mode, data):
         if mode == "record_imgs":
             self.send_to_view("record_imgs", data)
+        elif mode == "show_error":
+            self.send_to_view("show_error", data)
 
     def send_to_view(self, mode, data):
         self.view.recive_from_controller(mode, data)

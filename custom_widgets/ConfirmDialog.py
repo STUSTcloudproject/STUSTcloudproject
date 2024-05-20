@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QTextEdit, QComboBox, QLineEdit
+from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QTextEdit, QComboBox, QLineEdit, QMessageBox
 from PyQt5.QtCore import Qt
 import os
 
@@ -108,14 +108,41 @@ class ConfirmDialog(QDialog):
     def verify_path(self):
         path = self.path_input.text()
         if self.select_type == 'folder':
-            if self.callback({"name": "check_dir", "owner": "confirm_dialog", "data": path}):
-                self.selected_path_label.setText(f"Selected Path: {path}")
-                self.path_selected = True
-                self.selected_path = path
-            else:
+            path_status = self.callback({"name": "check_dir", "owner": "confirm_dialog", "data": path})
+
+            if path_status == "NotExist":
                 self.selected_path_label.setText("Selected Path: Invalid Folder")
                 self.path_selected = False
                 self.selected_path = ''
+            elif path_status == "Empty":
+                if self.enable_realsense_check:
+                    self.selected_path_label.setText(f"Selected Path: {path}")
+                    self.path_selected = True
+                    self.selected_path = path
+                else:
+                    self.selected_path_label.setText("Selected Path: No realsense.bag Found")
+                    self.path_selected = False
+                    self.selected_path = ''
+            elif path_status in ["ContainsRealsenseBag", "ContainsOtherFiles"]:
+                if self.enable_realsense_check:
+                    result = self.show_overwrite_dialog()
+                    if result == QMessageBox.Yes:  # 替換這裡為對話框邏輯
+                        self.selected_path_label.setText(f"Selected Path: {path}")
+                        self.path_selected = True
+                        self.selected_path = path
+                    else:
+                        self.selected_path_label.setText("Selected Path: Contains Other Files")
+                        self.path_selected = False
+                        self.selected_path = ''
+                else:
+                    if path_status == "ContainsRealsenseBag":
+                        self.selected_path_label.setText(f"Selected Path: {path}")
+                        self.path_selected = True
+                        self.selected_path = path
+                    else:
+                        self.selected_path_label.setText("Selected Path: No realsense.bag Found")
+                        self.path_selected = False
+                        self.selected_path = ''                     
         else:
             if self.callback({"name": "check_file", "owner": "confirm_dialog", "data": path}):
                 self.selected_path_label.setText(f"Selected Path: {path}")
@@ -126,6 +153,15 @@ class ConfirmDialog(QDialog):
                 self.path_selected = False
                 self.selected_path = ''
         self.update_ok_button_state()
+
+    def show_overwrite_dialog(self):
+        dialog = QMessageBox()
+        dialog.setIcon(QMessageBox.Warning)
+        dialog.setWindowTitle("Confirm Overwrite")
+        dialog.setText("The directory contains files. Do you want to overwrite?")
+        dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        dialog.setDefaultButton(QMessageBox.No)
+        return dialog.exec_()
 
     def update_ok_button_state(self):
         if self.realsense_checked and self.path_selected:

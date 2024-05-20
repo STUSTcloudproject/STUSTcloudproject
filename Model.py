@@ -7,10 +7,6 @@ class Model:
         self.recorder = None
         self.controller_callback = None
 
-    def recive_from_realsense_recorder(self, mode, data):
-        if mode == 'record_imgs':
-            self.send_to_controller(mode, data)
-
     def recive_from_controller(self, config_dict):
         if config_dict['mode'] == 'get_realsense_profiles':
             return self.get_realsense_profiles()
@@ -18,14 +14,15 @@ class Model:
             return self.check_path(config_dict)
         elif config_dict['mode'] == "start_preview":
             self.send_to_realsense_recorder('start_preview', data=config_dict)
-        elif config_dict['mode'] == 'stop_record':
-            self.send_to_realsense_recorder('stop_record')
         elif config_dict['mode'] == 'start_record':
             self.send_to_realsense_recorder('start_record')
-            
-            
+        elif config_dict['mode'] == 'stop_record':
+            self.send_to_realsense_recorder('stop_record')
+             
     def send_to_controller(self, mode, data):
         if mode == 'record_imgs':
+            self.controller_callback(mode, data)
+        elif mode == 'show_error':
             self.controller_callback(mode, data)
 
     def send_to_realsense_recorder(self, mode, data=None):
@@ -35,6 +32,12 @@ class Model:
             self.stop_realsense_recorder(mode)
         elif mode == 'start_record':
             self.start_realsense_recorder(mode)
+
+    def recive_from_realsense_recorder(self, mode, data):
+        if mode == 'record_imgs':
+            self.send_to_controller(mode, data)
+        elif mode == 'show_error':
+            self.send_to_controller(mode, data)
 
     def set_controller_callback(self, controller_callback):
         self.controller_callback = controller_callback
@@ -73,13 +76,21 @@ class Model:
     def check_path(self, config_dict):
         check_type = config_dict['mode']
         path = config_dict['data']
+        
         if check_type == 'check_file':
             if os.path.isfile(path):
                 return True
             else:
                 return False
+        
         elif check_type == 'check_dir':
-            if os.path.isdir(path):
-                return True
+            if not os.path.isdir(path):
+                return "NotExist"
+            elif not os.listdir(path):
+                return "Empty"
             else:
-                return False
+                files = os.listdir(path)
+                if "realsense.bag" in files:
+                    return "ContainsRealsenseBag"
+                else:
+                    return "ContainsOtherFiles"
