@@ -1,5 +1,4 @@
-from realsense_helper import get_profiles
-from RealSenseRecorder import RealSenseRecorder, Args
+import realsense as rs
 import tool 
 import os
 
@@ -41,13 +40,13 @@ class Model:
         self.controller_callback = controller_callback
 
     def get_realsense_profiles(self):
-        color_profiles, depth_profiles = get_profiles()
+        color_profiles, depth_profiles = rs.get_profiles()
         return tool.update_profile(color_profiles, depth_profiles)
 
     def start_realsense_preview(self, mode, config_dict):
         if self.recorder:
             self.recorder.recive_from_model('stop_record')
-        args = Args(
+        args = rs.Args(
             output_folder=config_dict['selected_path'],
             record_rosbag=config_dict['selected_items_dict']['Record rosbag'],
             record_imgs=config_dict['selected_items_dict']['Record imgs'],
@@ -60,7 +59,7 @@ class Model:
             fps=config_dict['realsense_selection'][0][2]
         )
         
-        self.recorder = RealSenseRecorder(args, self.recive_from_realsense_recorder)
+        self.recorder = rs.RealSenseRecorder(args, self.recive_from_realsense_recorder)
         self.recorder.recive_from_model(mode)
 
     def stop_realsense_recorder(self, mode):

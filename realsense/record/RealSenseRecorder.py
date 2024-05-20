@@ -104,11 +104,12 @@ class RealSenseRecorder:
 
     def start_recording(self):
         """启动录制"""
-        if self.is_running:
-            self.stop_pipeline()  # Stop the current pipeline before reconfiguring streams
-        self.is_recording = True
-        self.configure_streams(preview=False)  # Reconfigure streams for recording
-        self.start_pipeline()
+        if not self.args.playback_rosbag:
+            if self.is_running:
+                self.stop_pipeline()  # Stop the current pipeline before reconfiguring streams
+            self.is_recording = True
+            self.configure_streams(preview=False)  # Reconfigure streams for recording
+            self.start_pipeline()
 
     def stop_recording(self):
         """停止录制"""
