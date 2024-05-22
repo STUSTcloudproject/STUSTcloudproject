@@ -12,12 +12,15 @@ import time
 import datetime
 import os
 import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from os.path import isfile
 import open3d as o3d
 from open3d_example import check_folder_structure
 from initialize_config import initialize_config, dataset_loader
 
-class Args:
+class Args_run_system:
     def __init__(self, config=None, make=False, register=False, refine=False, integrate=False, slac=False, slac_integrate=False, debug_mode=False):
         self.config = config
         self.make = make
@@ -85,7 +88,7 @@ class ReconstructionSystem:
 
 # Usage Example
 if __name__ == "__main__":
-    args = Args(
+    args = Args_run_system(
         config='E:/PointCloud_qt_gui/realsense.json',
         make=True,
         register=True,
