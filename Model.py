@@ -58,8 +58,12 @@ class Model:
                 slac_integrate=selected_items_dict['Slac integrate'], 
                 debug_mode=selected_items_dict['Debug mode']
                 )
-            reconstruction_system = rs.ReconstructionSystem(args)
-            reconstruction_system.run()
+            self.reconstruction_system = rs.ReconstructionSystem(args)
+            self.reconstruction_system.run()
+
+    def stop_reconstruction_system(self, mode):
+        if self.reconstruction_system:
+            self.reconstruction_system.stop()
 
     def set_controller_callback(self, controller_callback):
         self.controller_callback = controller_callback
