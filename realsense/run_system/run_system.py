@@ -1,17 +1,9 @@
-# ----------------------------------------------------------------------------
-# -                        Open3D: www.open3d.org                            -
-# ----------------------------------------------------------------------------
-# Copyright (c) 2018-2023 www.open3d.org
-# SPDX-License-Identifier: MIT
-# ----------------------------------------------------------------------------
-
-# examples/python/reconstruction_system/run_system.py
-
 import json
 import time
 import datetime
 import os
 import sys
+import threading
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,6 +29,8 @@ class ReconstructionSystem:
         self.config = None
         self.times = [0, 0, 0, 0, 0, 0]
         self.load_config()
+        self.thread = None
+        self.stop_event = threading.Event()
 
     def load_config(self):
         if self.args.config is not None:
@@ -48,7 +42,7 @@ class ReconstructionSystem:
         assert self.config is not None
         self.config['debug_mode'] = self.args.debug_mode
 
-    def run(self):
+    def execute(self):
         print("====================================")
         print("Configuration")
         print("====================================")
@@ -71,6 +65,8 @@ class ReconstructionSystem:
         self.print_elapsed_time()
 
     def execute_step(self, module_name, function_name, index):
+        if self.stop_event.is_set():
+            return
         start_time = time.time()
         module = __import__(module_name)
         getattr(module, function_name)(self.config)
@@ -86,6 +82,15 @@ class ReconstructionSystem:
         print(f"- Total               {datetime.timedelta(seconds=sum(self.times))}")
         sys.stdout.flush()
 
+    def run(self):
+        self.thread = threading.Thread(target=self.execute)
+        self.thread.start()
+
+    def stop(self):
+        self.stop_event.set()
+        if self.thread is not None:
+            self.thread.join()
+
 # Usage Example
 if __name__ == "__main__":
     args = Args_run_system(
@@ -100,3 +105,6 @@ if __name__ == "__main__":
     )
     system = ReconstructionSystem(args)
     system.run()
+    # 添加一個示例來停止線程
+    time.sleep(5)  # 這裡只是等待5秒來模擬運行中的一些操作
+    system.stop()
