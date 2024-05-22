@@ -385,9 +385,9 @@ class MainInterface(QWidget):
                     self.set_terminal_message("start_bar", f"Selected Path: {selected_path}, Realsense Selection: {realsense_selection}")
                     if self.current_mode == "Record":
                         self.send_to_view("send_record_selected_items", selected_items_dict=selected_items_dict, realsense_selection=realsense_selection, selected_path=selected_path)
+                        self.set_images_display_panel()
                     elif self.current_mode == "RunSystem":
-                        self.send_to_view("send_run_system_selected_items", selected_items_dict=selected_items_dict, selected_path=selected_path)
-                    self.set_images_display_panel()
+                        self.send_to_view("send_run_system_selected_items", selected_items_dict=selected_items_dict, selected_path=selected_path)       
                     self.activated = True
             else:
                 self.activated = True
