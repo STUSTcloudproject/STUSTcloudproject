@@ -18,6 +18,8 @@ class Model:
             self.send_to_realsense_recorder('start_record')
         elif config_dict['mode'] == 'stop_record':
             self.send_to_realsense_recorder('stop_record')
+        elif config_dict['mode'] == 'start_run_system':
+            print(config_dict)
              
     def send_to_controller(self, mode, data):
         if mode == 'record_imgs':
@@ -61,7 +63,7 @@ class Model:
             color_fmt=config_dict['realsense_selection'][1][3],
             fps=config_dict['realsense_selection'][0][2]
         )
-        
+        print(args.depth_fmt, args.color_fmt, args.fps)
         self.recorder = rs.RealSenseRecorder(args, self.recive_from_realsense_recorder)
         self.recorder.recive_from_model(mode)
 

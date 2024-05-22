@@ -31,6 +31,13 @@ class View:
             
         elif mode == "stop_record" or mode == "start_record":
             self.send_to_controller(mode)
+        
+        elif mode == "start_run_system":
+           self.send_to_controller(
+                mode, 
+                selected_items_dict=selected_items_dict, 
+                selected_path=selected_path
+                )
 
 
     def set_controller_callback(self, controller_callback):

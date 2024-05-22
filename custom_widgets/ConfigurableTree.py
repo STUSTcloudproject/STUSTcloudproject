@@ -73,7 +73,6 @@ class ConfigurableTree(QTreeWidget):
             item = iterator.value()
             widget = self.itemWidget(item, 0)
             if widget and hasattr(widget, 'get_title') and hasattr(widget, 'get_selected'):
-                print(f"widget.get_title(): {widget.get_title()} widget.get_selected(): {widget.get_selected()}")
                 selected_items[widget.get_title()] = widget.get_selected()
             iterator += 1
         return selected_items

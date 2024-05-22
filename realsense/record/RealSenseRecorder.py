@@ -198,6 +198,10 @@ class RealSenseRecorder:
                 self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
                 self.color_image = np.asanyarray(color_frame.get_data())
                 self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
+                
+                self.depth_image = cv2.applyColorMap(
+                    cv2.convertScaleAbs(self.depth_image, alpha=0.09), cv2.COLORMAP_JET)
+                
                 self.send_to_model("record_imgs", {"depth_image": self.depth_image, "color_image": self.bg_removed})
                 if cv2.waitKey(1) == 27:
                     cv2.destroyAllWindows()
@@ -240,6 +244,10 @@ class RealSenseRecorder:
                     cv2.imwrite(f"{self.path_color}/{frame_count:06d}.jpg", self.color_image)
                     frame_count += 1
                 self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
+                
+                self.depth_image = cv2.applyColorMap(
+                    cv2.convertScaleAbs(self.depth_image, alpha=0.09), cv2.COLORMAP_JET)
+                
                 self.send_to_model("record_imgs", {"depth_image": self.depth_image, "color_image": self.bg_removed})
                 if cv2.waitKey(1) == 27:
                     cv2.destroyAllWindows()

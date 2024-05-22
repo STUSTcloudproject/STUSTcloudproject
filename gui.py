@@ -383,7 +383,10 @@ class MainInterface(QWidget):
                 if success:                  
                     self.set_terminal_message("start_bar", f"Send selected items to Controller: {self.current_mode} {selected_items_dict}")
                     self.set_terminal_message("start_bar", f"Selected Path: {selected_path}, Realsense Selection: {realsense_selection}")
-                    self.send_to_view("send_selected_items", selected_items_dict=selected_items_dict, realsense_selection=realsense_selection, selected_path=selected_path)
+                    if self.current_mode == "Record":
+                        self.send_to_view("send_record_selected_items", selected_items_dict=selected_items_dict, realsense_selection=realsense_selection, selected_path=selected_path)
+                    elif self.current_mode == "RunSystem":
+                        self.send_to_view("send_run_system_selected_items", selected_items_dict=selected_items_dict, selected_path=selected_path)
                     self.set_images_display_panel()
                     self.activated = True
             else:
@@ -430,13 +433,19 @@ class MainInterface(QWidget):
             print("No callback function is set.")
             return
         
-        if mode == "send_selected_items":
+        if mode == "send_record_selected_items":
             self.callback_to_view(
                 "start_preview", 
                 selected_items_dict=selected_items_dict, 
                 realsense_selection=realsense_selection, 
                 selected_path=selected_path,
                 data=data
+                )
+        elif mode == "send_run_system_selected_items":
+            self.callback_to_view(
+                "start_run_system", 
+                selected_items_dict=selected_items_dict, 
+                selected_path=selected_path,
                 )
             
         elif mode == "get_realsense_profiles":

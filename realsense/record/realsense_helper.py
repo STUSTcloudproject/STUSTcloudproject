@@ -38,3 +38,10 @@ def get_profiles():
                         depth_profiles.append((w, h, fps, fmt))
 
     return color_profiles, depth_profiles
+
+if __name__ == "__main__":
+    color_profiles, depth_profiles = get_profiles()
+    print("Color profiles:")
+    print(color_profiles)
+    print("Depth profiles:")
+    print(depth_profiles)
