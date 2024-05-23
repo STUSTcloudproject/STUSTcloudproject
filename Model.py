@@ -18,6 +18,8 @@ class Model:
             self.send_to_realsense_recorder('start_record')
         elif config_dict['mode'] == 'stop_record':
             self.send_to_realsense_recorder('stop_record')
+            self.send_to_reconstruction_system('stop_run_system')
+
         elif config_dict['mode'] == 'start_run_system':
             self.send_to_reconstruction_system('start_run_system', data=config_dict)
              
@@ -27,9 +29,11 @@ class Model:
         elif mode == 'show_error':
             self.controller_callback(mode, data)
 
-    def send_to_reconstruction_system(self, mode, data):
+    def send_to_reconstruction_system(self, mode, data=None):
         if mode == 'start_run_system':
             self.start_reconstruction_system(mode, data)
+        elif mode == 'stop_run_system':
+            self.stop_reconstruction_system(mode)
 
     def send_to_realsense_recorder(self, mode, data=None):
         if mode == 'start_preview':
@@ -43,6 +47,10 @@ class Model:
         if mode == 'record_imgs':
             self.send_to_controller(mode, data)
         elif mode == 'show_error':
+            self.send_to_controller(mode, data)
+
+    def recive_from_reconstruction_system(self, mode, data):
+        if mode == 'show_error':
             self.send_to_controller(mode, data)
 
     def start_reconstruction_system(self, mode, data):
@@ -59,11 +67,11 @@ class Model:
                 debug_mode=selected_items_dict['Debug mode']
                 )
             self.reconstruction_system = rs.ReconstructionSystem(args)
-            self.reconstruction_system.run()
+            self.reconstruction_system.recive_from_model('start_run_system')
 
     def stop_reconstruction_system(self, mode):
         if self.reconstruction_system:
-            self.reconstruction_system.stop()
+            self.reconstruction_system.recive_from_model('stop_run_system')
 
     def set_controller_callback(self, controller_callback):
         self.controller_callback = controller_callback

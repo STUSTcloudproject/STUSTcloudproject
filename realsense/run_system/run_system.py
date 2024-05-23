@@ -83,13 +83,21 @@ class ReconstructionSystem:
         sys.stdout.flush()
 
     def run(self):
+        print("\n\nReconstruction System is running\n\n")
         self.thread = threading.Thread(target=self.execute)
         self.thread.start()
 
     def stop(self):
+        print("\n\nReconstruction System is stopping\n\n")
         self.stop_event.set()
         if self.thread is not None:
             self.thread.join()
+
+    def recive_from_model(self, mode, data=None):
+        if mode == "start_run_system":
+            self.run()
+        elif mode == "stop_run_system":
+            self.stop()
 
 # Usage Example
 if __name__ == "__main__":
