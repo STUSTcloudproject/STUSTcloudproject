@@ -4,6 +4,7 @@ import datetime
 import os
 import sys
 import threading
+import multiprocessing
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -31,7 +32,8 @@ class ReconstructionSystem:
         self.times = [0, 0, 0, 0, 0, 0]
         self.load_config()
         self.thread = None
-        self.stop_event = threading.Event()
+        self.manager = multiprocessing.Manager()
+        self.stop_event = self.manager.Event()  # 使用 multiprocessing.Manager 提供的 Event
 
     def load_config(self):
         try:
@@ -56,7 +58,7 @@ class ReconstructionSystem:
                 print(f"{key:40} : {val}")
 
             if self.args.make:
-                self.execute_step("make_fragments", "run", 0)
+                self.execute_step("make_fragments", "run", 0, self.stop_event)
             if self.args.register:
                 self.execute_step("register_fragments", "run", 1)
             if self.args.refine:
@@ -73,13 +75,16 @@ class ReconstructionSystem:
             print(f"Error during execution: {e}")
             self.send_to_model("show_error", {"title": "Error during execution", "message": str(e)})
 
-    def execute_step(self, module_name, function_name, index):
+    def execute_step(self, module_name, function_name, index, stop_event=None):
         try:
             if self.stop_event.is_set():
                 return
             start_time = time.time()
             module = __import__(module_name)
-            getattr(module, function_name)(self.config)
+            if stop_event:
+                getattr(module, function_name)(self.config, stop_event)
+            else:
+                getattr(module, function_name)(self.config)
             self.times[index] = time.time() - start_time
         except Exception as e:
             print(f"Error in execute_step {module_name}: {e}")
@@ -141,7 +146,7 @@ class ReconstructionSystem:
 # Usage Example
 if __name__ == "__main__":
     args = Args_run_system(
-        config='realsense.json',
+        config='E:/MVC_gui/realsense.json',
         make=True,
         register=True,
         refine=True,
@@ -153,5 +158,5 @@ if __name__ == "__main__":
     system = ReconstructionSystem(args)
     system.run()
     # 添加一個示例來停止線程
-    time.sleep(5)  # 這裡只是等待5秒來模擬運行中的一些操作
+    time.sleep(10)  # 這裡只是等待5秒來模擬運行中的一些操作
     system.stop()
