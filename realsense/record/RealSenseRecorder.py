@@ -278,7 +278,7 @@ class RealSenseRecorder:
             self.send_to_model("show_error", {"title": "Error receiving from model", "message": str(e)})
 
     def send_to_model(self, mode, data):
-        if self.callback:
+        if self.callback is not None:
             try:
                 if mode == "record_imgs":
                     self.callback(mode, data)

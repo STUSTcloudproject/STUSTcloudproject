@@ -6,6 +6,9 @@ class Model:
     def __init__(self):
         self.recorder = None
         self.controller_callback = None
+        self.recorder = None
+        self.reconstruction_system = None
+
 
     def recive_from_controller(self, config_dict):
         if config_dict['mode'] == 'get_realsense_profiles':
@@ -66,7 +69,7 @@ class Model:
                 slac_integrate=selected_items_dict['Slac integrate'], 
                 debug_mode=selected_items_dict['Debug mode']
                 )
-            self.reconstruction_system = rs.ReconstructionSystem(args)
+            self.reconstruction_system = rs.ReconstructionSystem(args, self.recive_from_reconstruction_system)
             self.reconstruction_system.recive_from_model('start_run_system')
 
     def stop_reconstruction_system(self, mode):
