@@ -146,7 +146,7 @@ class ReconstructionSystem:
 # Usage Example
 if __name__ == "__main__":
     args = Args_run_system(
-        config='E:/MVC_gui/realsense.json',
+        config='realsense.json',
         make=True,
         register=True,
         refine=True,
