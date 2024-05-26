@@ -48,9 +48,14 @@ def multiscale_icp(source,
                    voxel_size,
                    max_iter,
                    config,
-                   init_transformation=np.identity(4)):
+                   init_transformation=np.identity(4),
+                   stop_event=None):
     current_transformation = init_transformation
     for i, scale in enumerate(range(len(max_iter))):  # multi-scale approach
+        if stop_event is not None and stop_event.is_set():
+            print("Stopping multiscale ICP")
+            return (current_transformation, np.zeros((6, 6)))
+
         iter = max_iter[scale]
         distance_threshold = config["voxel_size"] * 1.4
         print("voxel_size {}".format(voxel_size[scale]))
@@ -116,32 +121,35 @@ def multiscale_icp(source,
     return (result_icp.transformation, information_matrix)
 
 
-def local_refinement(source, target, transformation_init, config):
+def local_refinement(source, target, transformation_init, config, stop_event):
     voxel_size = config["voxel_size"]
     (transformation, information) = \
             multiscale_icp(
             source, target,
             [voxel_size, voxel_size/2.0, voxel_size/4.0], [50, 30, 14],
-            config, transformation_init)
+            config, transformation_init, stop_event)
 
     return (transformation, information)
 
 
 def register_point_cloud_pair(ply_file_names, s, t, transformation_init,
-                              config):
+                              config, stop_event):
+    if stop_event.is_set():
+        print(f"Stopping registration of point cloud pair {s} and {t}")
+        return (np.identity(4), np.identity(6))
+
     print("reading %s ..." % ply_file_names[s])
     source = o3d.io.read_point_cloud(ply_file_names[s])
     print("reading %s ..." % ply_file_names[t])
     target = o3d.io.read_point_cloud(ply_file_names[t])
     (transformation, information) = \
-            local_refinement(source, target, transformation_init, config)
+            local_refinement(source, target, transformation_init, config, stop_event)
     if config["debug_mode"]:
         print(transformation)
         print(information)
     return (transformation, information)
 
 
-# other types instead of class?
 class matching_result:
 
     def __init__(self, s, t, trans):
@@ -152,7 +160,7 @@ class matching_result:
         self.infomation = np.identity(6)
 
 
-def make_posegraph_for_refined_scene(ply_file_names, config):
+def make_posegraph_for_refined_scene(ply_file_names, config, stop_event):
     pose_graph = o3d.io.read_pose_graph(
         join(config["path_dataset"],
              config["template_global_posegraph_optimized"]))
@@ -171,7 +179,7 @@ def make_posegraph_for_refined_scene(ply_file_names, config):
             1, min(multiprocessing.cpu_count() - 1, len(pose_graph.edges)))
         mp_context = multiprocessing.get_context('spawn')
         with mp_context.Pool(processes=max_workers) as pool:
-            args = [(ply_file_names, v.s, v.t, v.transformation, config)
+            args = [(ply_file_names, v.s, v.t, v.transformation, config, stop_event)
                     for k, v in matching_results.items()]
             results = pool.starmap(register_point_cloud_pair, args)
 
@@ -180,11 +188,14 @@ def make_posegraph_for_refined_scene(ply_file_names, config):
             matching_results[r].information = results[i][1]
     else:
         for r in matching_results:
+            if stop_event.is_set():
+                print(f"Stopping posegraph creation for refined scene")
+                break
             (matching_results[r].transformation,
              matching_results[r].information) = \
                 register_point_cloud_pair(ply_file_names,
                                           matching_results[r].s, matching_results[r].t,
-                                          matching_results[r].transformation, config)
+                                          matching_results[r].transformation, config, stop_event)
 
     pose_graph_new = o3d.pipelines.registration.PoseGraph()
     odometry = np.identity(4)
@@ -201,13 +212,14 @@ def make_posegraph_for_refined_scene(ply_file_names, config):
         pose_graph_new)
 
 
-def run(config):
+def run(config, stop_event):
     print("refine rough registration of fragments.")
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
     ply_file_names = get_file_list(
         join(config["path_dataset"], config["folder_fragment"]), ".ply")
-    make_posegraph_for_refined_scene(ply_file_names, config)
-    optimize_posegraph_for_refined_scene(config["path_dataset"], config)
+    make_posegraph_for_refined_scene(ply_file_names, config, stop_event)
+    if not stop_event.is_set():
+        optimize_posegraph_for_refined_scene(config["path_dataset"], config)
 
     path_dataset = config['path_dataset']
     n_fragments = len(ply_file_names)

@@ -14,8 +14,7 @@ import os, sys
 from open3d_example import join, get_file_list, write_poses_to_log
 
 
-
-def run(config):
+def run(config, stop_event):
     print("slac non-rigid optimization.")
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
 
@@ -48,6 +47,10 @@ def run(config):
     # Run the system.
     pose_graph_updated = o3d.pipelines.registration.PoseGraph()
 
+    if stop_event.is_set():
+        print("Stopping SLAC optimization")
+        return
+
     # rigid optimization method.
     if (config["method"] == "rigid"):
         pose_graph_updated = o3d.t.pipelines.slac.run_rigid_optimizer_for_fragments(
@@ -55,6 +58,10 @@ def run(config):
     elif (config["method"] == "slac"):
         pose_graph_updated, ctrl_grid = o3d.t.pipelines.slac.run_slac_optimizer_for_fragments(
             ply_file_names, pose_graph_fragment, slac_params, debug_option)
+
+        if stop_event.is_set():
+            print("Stopping SLAC optimization")
+            return
 
         hashmap = ctrl_grid.get_hashmap()
         active_buf_indices = hashmap.active_buf_indices().to(
@@ -73,6 +80,10 @@ def run(config):
             "Requested optimization method {}, is not implemented. Implemented methods includes slac and rigid."
             .format(config["method"]))
 
+    if stop_event.is_set():
+        print("Stopping SLAC optimization")
+        return
+
     # Write updated pose graph.
     o3d.io.write_pose_graph(
         join(slac_params.get_subfolder_name(),
@@ -82,6 +93,10 @@ def run(config):
     fragment_folder = join(path_dataset, config["folder_fragment"])
     params = []
     for i in range(len(pose_graph_updated.nodes)):
+        if stop_event.is_set():
+            print("Stopping SLAC optimization")
+            return
+
         fragment_pose_graph = o3d.io.read_pose_graph(
             join(fragment_folder, "fragment_optimized_%03d.json" % i))
         for node in fragment_pose_graph.nodes:

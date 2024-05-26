@@ -65,7 +65,10 @@ def register_point_cloud_fpfh(source, target, source_fpfh, target_fpfh, config):
 
 
 def compute_initial_registration(s, t, source_down, target_down, source_fpfh,
-                                 target_fpfh, path_dataset, config):
+                                 target_fpfh, path_dataset, config, stop_event):
+    if stop_event.is_set():
+        print(f"Stopping initial registration between {s} and {t}")
+        return (False, np.identity(4), np.zeros((6, 6)))
 
     if t == s + 1:  # odometry case
         print("Using RGBD odometry")
@@ -116,7 +119,11 @@ def update_posegraph_for_scene(s, t, transformation, information, odometry,
     return (odometry, pose_graph)
 
 
-def register_point_cloud_pair(ply_file_names, s, t, config):
+def register_point_cloud_pair(ply_file_names, s, t, config, stop_event):
+    if stop_event.is_set():
+        print(f"Stopping registration of point cloud pair {s} and {t}")
+        return (False, np.identity(4), np.identity(6))
+
     print("reading %s ..." % ply_file_names[s])
     source = o3d.io.read_point_cloud(ply_file_names[s])
     print("reading %s ..." % ply_file_names[t])
@@ -126,7 +133,7 @@ def register_point_cloud_pair(ply_file_names, s, t, config):
     (success, transformation, information) = \
             compute_initial_registration(
             s, t, source_down, target_down,
-            source_fpfh, target_fpfh, config["path_dataset"], config)
+            source_fpfh, target_fpfh, config["path_dataset"], config, stop_event)
     if t != s + 1 and not success:
         return (False, np.identity(4), np.identity(6))
     if config["debug_mode"]:
@@ -146,7 +153,7 @@ class matching_result:
         self.infomation = np.identity(6)
 
 
-def make_posegraph_for_scene(ply_file_names, config):
+def make_posegraph_for_scene(ply_file_names, config, stop_event):
     pose_graph = o3d.pipelines.registration.PoseGraph()
     odometry = np.identity(4)
     pose_graph.nodes.append(o3d.pipelines.registration.PoseGraphNode(odometry))
@@ -163,7 +170,7 @@ def make_posegraph_for_scene(ply_file_names, config):
             1, min(multiprocessing.cpu_count() - 1, len(matching_results)))
         mp_context = multiprocessing.get_context('spawn')
         with mp_context.Pool(processes=max_workers) as pool:
-            args = [(ply_file_names, v.s, v.t, config)
+            args = [(ply_file_names, v.s, v.t, config, stop_event)
                     for k, v in matching_results.items()]
             results = pool.starmap(register_point_cloud_pair, args)
 
@@ -173,10 +180,13 @@ def make_posegraph_for_scene(ply_file_names, config):
             matching_results[r].information = results[i][2]
     else:
         for r in matching_results:
+            if stop_event.is_set():
+                print(f"Stopping posegraph creation for scene")
+                break
             (matching_results[r].success, matching_results[r].transformation,
              matching_results[r].information) = \
                 register_point_cloud_pair(ply_file_names,
-                                          matching_results[r].s, matching_results[r].t, config)
+                                          matching_results[r].s, matching_results[r].t, config, stop_event)
 
     for r in matching_results:
         if matching_results[r].success:
@@ -189,11 +199,12 @@ def make_posegraph_for_scene(ply_file_names, config):
         pose_graph)
 
 
-def run(config):
+def run(config, stop_event):
     print("register fragments.")
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
     ply_file_names = get_file_list(
         join(config["path_dataset"], config["folder_fragment"]), ".ply")
     make_clean_folder(join(config["path_dataset"], config["folder_scene"]))
-    make_posegraph_for_scene(ply_file_names, config)
-    optimize_posegraph_for_scene(config["path_dataset"], config)
+    make_posegraph_for_scene(ply_file_names, config, stop_event)
+    if not stop_event.is_set():
+        optimize_posegraph_for_scene(config["path_dataset"], config)

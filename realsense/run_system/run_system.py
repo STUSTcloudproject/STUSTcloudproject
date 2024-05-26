@@ -60,15 +60,20 @@ class ReconstructionSystem:
             if self.args.make:
                 self.execute_step("make_fragments", "run", 0, self.stop_event)
             if self.args.register:
-                self.execute_step("register_fragments", "run", 1)
+                #input("Press Enter to continue...")
+                self.execute_step("register_fragments", "run", 1, self.stop_event)
             if self.args.refine:
-                self.execute_step("refine_registration", "run", 2)
+                #input("Press Enter to continue...")
+                self.execute_step("refine_registration", "run", 2, self.stop_event)
             if self.args.integrate:
-                self.execute_step("integrate_scene", "run", 3)
+                #input("Press Enter to continue...")
+                self.execute_step("integrate_scene", "run", 3, self.stop_event)
             if self.args.slac:
-                self.execute_step("slac", "run", 4)
+                #input("Press Enter to continue...") 
+                self.execute_step("slac", "run", 4, self.stop_event)
             if self.args.slac_integrate:
-                self.execute_step("slac_integrate", "run", 5)
+                #input("Press Enter to continue...")
+                self.execute_step("slac_integrate", "run", 5, self.stop_event)
 
             self.print_elapsed_time()
         except Exception as e:
