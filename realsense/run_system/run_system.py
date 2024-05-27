@@ -34,6 +34,18 @@ class ReconstructionSystem:
         self.thread = None
         self.manager = multiprocessing.Manager()
         self.stop_event = self.manager.Event()  # 使用 multiprocessing.Manager 提供的 Event
+        self.message_queue = self.manager.Queue()
+        self.monitor_thread = threading.Thread(target=self.monitor_messages)
+        self.monitor_thread.start()
+
+    def monitor_messages(self):
+        while not self.stop_event.is_set():
+            try:
+                message = self.message_queue.get(timeout=1)
+                if message:
+                    print(f"multiprocess : {message}")
+            except:
+                continue
 
     def load_config(self):
         try:
@@ -58,7 +70,7 @@ class ReconstructionSystem:
                 print(f"{key:40} : {val}")
 
             if self.args.make:
-                self.execute_step("make_fragments", "run", 0, self.stop_event)
+                self.execute_step("make_fragments", "run", 0, self.stop_event, self.message_queue)
             if self.args.register:
                 #input("Press Enter to continue...")
                 self.execute_step("register_fragments", "run", 1, self.stop_event)
@@ -80,14 +92,17 @@ class ReconstructionSystem:
             print(f"Error during execution: {e}")
             self.send_to_model("show_error", {"title": "Error during execution", "message": str(e)})
 
-    def execute_step(self, module_name, function_name, index, stop_event=None):
+    def execute_step(self, module_name, function_name, index, stop_event=None, message_queue=None):
         try:
             if self.stop_event.is_set():
                 return
             start_time = time.time()
             module = __import__(module_name)
             if stop_event:
-                getattr(module, function_name)(self.config, stop_event)
+                if message_queue:
+                    getattr(module, function_name)(self.config, stop_event, message_queue)
+                else:
+                    getattr(module, function_name)(self.config, stop_event)
             else:
                 getattr(module, function_name)(self.config)
             self.times[index] = time.time() - start_time

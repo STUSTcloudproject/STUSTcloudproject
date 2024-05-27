@@ -58,7 +58,7 @@ class Model:
 
     def start_reconstruction_system(self, mode, data):
         selected_items_dict = data['selected_items_dict']
-        if mode == 'start_run_system':
+        if mode == 'start_run_system':  
             args = rs.Args_run_system(
                 config=data['selected_path'], 
                 make=selected_items_dict['Make'], 
