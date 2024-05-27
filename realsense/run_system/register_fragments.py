@@ -65,13 +65,13 @@ def register_point_cloud_fpfh(source, target, source_fpfh, target_fpfh, config):
 
 
 def compute_initial_registration(s, t, source_down, target_down, source_fpfh,
-                                 target_fpfh, path_dataset, config, stop_event):
+                                 target_fpfh, path_dataset, config, stop_event, message_queue):
     if stop_event.is_set():
-        print(f"Stopping initial registration between {s} and {t}")
+        message_queue.put(f"Stopping initial registration between {s} and {t}")
         return (False, np.identity(4), np.zeros((6, 6)))
 
     if t == s + 1:  # odometry case
-        print("Using RGBD odometry")
+        message_queue.put("Using RGBD odometry")
         pose_graph_frag = o3d.io.read_pose_graph(
             join(path_dataset,
                  config["template_fragment_posegraph_optimized"] % s))
@@ -80,16 +80,16 @@ def compute_initial_registration(s, t, source_down, target_down, source_fpfh,
                                                                   1].pose)
         (transformation, information) = \
                 multiscale_icp(source_down, target_down,
-                [config["voxel_size"]], [50], config, transformation_init)
+                [config["voxel_size"]], [50], config, transformation_init, stop_event=stop_event, message_queue=message_queue)
     else:  # loop closure case
         (success, transformation,
          information) = register_point_cloud_fpfh(source_down, target_down,
                                                   source_fpfh, target_fpfh,
                                                   config)
         if not success:
-            print("No reasonable solution. Skip this pair")
+            message_queue.put("No reasonable solution. Skip this pair")
             return (False, np.identity(4), np.zeros((6, 6)))
-    print(transformation)
+    message_queue.put(str(transformation))
 
     if config["debug_mode"]:
         draw_registration_result(source_down, target_down, transformation)
@@ -119,32 +119,30 @@ def update_posegraph_for_scene(s, t, transformation, information, odometry,
     return (odometry, pose_graph)
 
 
-def register_point_cloud_pair(ply_file_names, s, t, config, stop_event):
+def register_point_cloud_pair(ply_file_names, s, t, config, stop_event, message_queue):
     if stop_event.is_set():
-        print(f"Stopping registration of point cloud pair {s} and {t}")
+        message_queue.put(f"Stopping registration of point cloud pair {s} and {t}")
         return (False, np.identity(4), np.identity(6))
 
-    print("reading %s ..." % ply_file_names[s])
+    message_queue.put(f"reading {ply_file_names[s]} ...")
     source = o3d.io.read_point_cloud(ply_file_names[s])
-    print("reading %s ..." % ply_file_names[t])
+    message_queue.put(f"reading {ply_file_names[t]} ...")
     target = o3d.io.read_point_cloud(ply_file_names[t])
     (source_down, source_fpfh) = preprocess_point_cloud(source, config)
     (target_down, target_fpfh) = preprocess_point_cloud(target, config)
     (success, transformation, information) = \
             compute_initial_registration(
             s, t, source_down, target_down,
-            source_fpfh, target_fpfh, config["path_dataset"], config, stop_event)
+            source_fpfh, target_fpfh, config["path_dataset"], config, stop_event, message_queue)
     if t != s + 1 and not success:
         return (False, np.identity(4), np.identity(6))
     if config["debug_mode"]:
-        print(transformation)
-        print(information)
+        message_queue.put(str(transformation))
+        message_queue.put(str(information))
     return (True, transformation, information)
 
 
-# other types instead of class?
 class matching_result:
-
     def __init__(self, s, t):
         self.s = s
         self.t = t
@@ -153,7 +151,7 @@ class matching_result:
         self.infomation = np.identity(6)
 
 
-def make_posegraph_for_scene(ply_file_names, config, stop_event):
+def make_posegraph_for_scene(ply_file_names, config, stop_event, message_queue):
     pose_graph = o3d.pipelines.registration.PoseGraph()
     odometry = np.identity(4)
     pose_graph.nodes.append(o3d.pipelines.registration.PoseGraphNode(odometry))
@@ -170,7 +168,7 @@ def make_posegraph_for_scene(ply_file_names, config, stop_event):
             1, min(multiprocessing.cpu_count() - 1, len(matching_results)))
         mp_context = multiprocessing.get_context('spawn')
         with mp_context.Pool(processes=max_workers) as pool:
-            args = [(ply_file_names, v.s, v.t, config, stop_event)
+            args = [(ply_file_names, v.s, v.t, config, stop_event, message_queue)
                     for k, v in matching_results.items()]
             results = pool.starmap(register_point_cloud_pair, args)
 
@@ -181,12 +179,12 @@ def make_posegraph_for_scene(ply_file_names, config, stop_event):
     else:
         for r in matching_results:
             if stop_event.is_set():
-                print(f"Stopping posegraph creation for scene")
+                message_queue.put("Stopping posegraph creation for scene")
                 break
             (matching_results[r].success, matching_results[r].transformation,
              matching_results[r].information) = \
                 register_point_cloud_pair(ply_file_names,
-                                          matching_results[r].s, matching_results[r].t, config, stop_event)
+                                          matching_results[r].s, matching_results[r].t, config, stop_event, message_queue)
 
     for r in matching_results:
         if matching_results[r].success:
@@ -199,12 +197,12 @@ def make_posegraph_for_scene(ply_file_names, config, stop_event):
         pose_graph)
 
 
-def run(config, stop_event):
-    print("register fragments.")
+def run(config, stop_event, message_queue):
+    message_queue.put("register fragments.")
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
     ply_file_names = get_file_list(
         join(config["path_dataset"], config["folder_fragment"]), ".ply")
     make_clean_folder(join(config["path_dataset"], config["folder_scene"]))
-    make_posegraph_for_scene(ply_file_names, config, stop_event)
+    make_posegraph_for_scene(ply_file_names, config, stop_event, message_queue)
     if not stop_event.is_set():
         optimize_posegraph_for_scene(config["path_dataset"], config)

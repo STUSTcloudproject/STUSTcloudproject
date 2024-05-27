@@ -14,8 +14,8 @@ import os, sys
 
 from open3d_example import join, get_rgbd_file_lists
 
-def run(config, stop_event):
-    print("slac non-rigid optimization.")
+def run(config, stop_event, message_queue):
+    message_queue.put("slac non-rigid optimization.")
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
 
     path_dataset = config["path_dataset"]
@@ -55,8 +55,8 @@ def run(config, stop_event):
         block_count=config['block_count'],
         device=device)
 
-    ctr_grid_keys = o3d.core.Tensor.load(slac_folder + "ctr_grid_keys.npy")
-    ctr_grid_values = o3d.core.Tensor.load(slac_folder + "ctr_grid_values.npy")
+    ctr_grid_keys = o3d.core.Tensor.load(join(slac_folder, "ctr_grid_keys.npy"))
+    ctr_grid_values = o3d.core.Tensor.load(join(slac_folder, "ctr_grid_values.npy"))
 
     ctr_grid = o3d.t.pipelines.slac.control_grid(3.0 / 8,
                                                  ctr_grid_keys.to(device),
@@ -70,13 +70,13 @@ def run(config, stop_event):
     depth_max = float(config['depth_max'])
     for i in range(len(posegraph.nodes)):
         if stop_event.is_set():
-            print("Stopping SLAC integration")
+            message_queue.put("Stopping SLAC integration")
             return
         fragment_pose_graph = o3d.io.read_pose_graph(
             join(fragment_folder, "fragment_optimized_%03d.json" % i))
         for node in fragment_pose_graph.nodes:
             if stop_event.is_set():
-                print("Stopping SLAC integration")
+                message_queue.put("Stopping SLAC integration")
                 return
             pose_local = node.pose
             extrinsic_local_t = o3d.core.Tensor(np.linalg.inv(pose_local))
@@ -88,7 +88,7 @@ def run(config, stop_event):
             color = o3d.t.io.read_image(color_files[k]).to(device)
             rgbd = o3d.t.geometry.RGBDImage(color, depth)
 
-            print('Deforming and integrating Frame {:3d}'.format(k))
+            message_queue.put('Deforming and integrating Frame {:3d}'.format(k))
             rgbd_projected = ctr_grid.deform(rgbd, intrinsic_t,
                                              extrinsic_local_t, depth_scale,
                                              depth_max)

@@ -14,7 +14,6 @@ import sys
 import numpy as np
 import open3d as o3d
 
-
 from open3d_example import join, get_file_list, write_poses_to_log, draw_registration_result_original_color
 
 from optimize_posegraph import optimize_posegraph_for_refined_scene
@@ -49,24 +48,24 @@ def multiscale_icp(source,
                    max_iter,
                    config,
                    init_transformation=np.identity(4),
-                   stop_event=None):
+                   stop_event=None,
+                   message_queue=None):
     current_transformation = init_transformation
     for i, scale in enumerate(range(len(max_iter))):  # multi-scale approach
         if stop_event is not None and stop_event.is_set():
-            print("Stopping multiscale ICP")
+            message_queue.put("Stopping multiscale ICP")
             return (current_transformation, np.zeros((6, 6)))
 
         iter = max_iter[scale]
         distance_threshold = config["voxel_size"] * 1.4
-        print("voxel_size {}".format(voxel_size[scale]))
+        message_queue.put(f"voxel_size {voxel_size[scale]}")
         source_down = source.voxel_down_sample(voxel_size[scale])
         target_down = target.voxel_down_sample(voxel_size[scale])
         if config["icp_method"] == "point_to_point":
             result_icp = o3d.pipelines.registration.registration_icp(
                 source_down, target_down, distance_threshold,
                 current_transformation,
-                o3d.pipelines.registration.TransformationEstimationPointToPoint(
-                ),
+                o3d.pipelines.registration.TransformationEstimationPointToPoint(),
                 o3d.pipelines.registration.ICPConvergenceCriteria(
                     max_iteration=iter))
         else:
@@ -82,19 +81,14 @@ def multiscale_icp(source,
                 result_icp = o3d.pipelines.registration.registration_icp(
                     source_down, target_down, distance_threshold,
                     current_transformation,
-                    o3d.pipelines.registration.
-                    TransformationEstimationPointToPlane(),
+                    o3d.pipelines.registration.TransformationEstimationPointToPlane(),
                     o3d.pipelines.registration.ICPConvergenceCriteria(
                         max_iteration=iter))
             if config["icp_method"] == "color":
-                # Colored ICP is sensitive to threshold.
-                # Fallback to preset distance threshold that works better.
-                # TODO: make it adjustable in the upgraded system.
                 result_icp = o3d.pipelines.registration.registration_colored_icp(
                     source_down, target_down, voxel_size[scale],
                     current_transformation,
-                    o3d.pipelines.registration.
-                    TransformationEstimationForColoredICP(),
+                    o3d.pipelines.registration.TransformationEstimationForColoredICP(),
                     o3d.pipelines.registration.ICPConvergenceCriteria(
                         relative_fitness=1e-6,
                         relative_rmse=1e-6,
@@ -103,8 +97,7 @@ def multiscale_icp(source,
                 result_icp = o3d.pipelines.registration.registration_generalized_icp(
                     source_down, target_down, distance_threshold,
                     current_transformation,
-                    o3d.pipelines.registration.
-                    TransformationEstimationForGeneralizedICP(),
+                    o3d.pipelines.registration.TransformationEstimationForGeneralizedICP(),
                     o3d.pipelines.registration.ICPConvergenceCriteria(
                         relative_fitness=1e-6,
                         relative_rmse=1e-6,
@@ -121,32 +114,32 @@ def multiscale_icp(source,
     return (result_icp.transformation, information_matrix)
 
 
-def local_refinement(source, target, transformation_init, config, stop_event):
+def local_refinement(source, target, transformation_init, config, stop_event, message_queue):
     voxel_size = config["voxel_size"]
     (transformation, information) = \
             multiscale_icp(
             source, target,
             [voxel_size, voxel_size/2.0, voxel_size/4.0], [50, 30, 14],
-            config, transformation_init, stop_event)
+            config, transformation_init, stop_event, message_queue)
 
     return (transformation, information)
 
 
 def register_point_cloud_pair(ply_file_names, s, t, transformation_init,
-                              config, stop_event):
+                              config, stop_event, message_queue):
     if stop_event.is_set():
-        print(f"Stopping registration of point cloud pair {s} and {t}")
+        message_queue.put(f"Stopping registration of point cloud pair {s} and {t}")
         return (np.identity(4), np.identity(6))
 
-    print("reading %s ..." % ply_file_names[s])
+    message_queue.put(f"reading {ply_file_names[s]} ...")
     source = o3d.io.read_point_cloud(ply_file_names[s])
-    print("reading %s ..." % ply_file_names[t])
+    message_queue.put(f"reading {ply_file_names[t]} ...")
     target = o3d.io.read_point_cloud(ply_file_names[t])
     (transformation, information) = \
-            local_refinement(source, target, transformation_init, config, stop_event)
+            local_refinement(source, target, transformation_init, config, stop_event, message_queue)
     if config["debug_mode"]:
-        print(transformation)
-        print(information)
+        message_queue.put(str(transformation))
+        message_queue.put(str(information))
     return (transformation, information)
 
 
@@ -160,7 +153,7 @@ class matching_result:
         self.infomation = np.identity(6)
 
 
-def make_posegraph_for_refined_scene(ply_file_names, config, stop_event):
+def make_posegraph_for_refined_scene(ply_file_names, config, stop_event, message_queue):
     pose_graph = o3d.io.read_pose_graph(
         join(config["path_dataset"],
              config["template_global_posegraph_optimized"]))
@@ -179,7 +172,7 @@ def make_posegraph_for_refined_scene(ply_file_names, config, stop_event):
             1, min(multiprocessing.cpu_count() - 1, len(pose_graph.edges)))
         mp_context = multiprocessing.get_context('spawn')
         with mp_context.Pool(processes=max_workers) as pool:
-            args = [(ply_file_names, v.s, v.t, v.transformation, config, stop_event)
+            args = [(ply_file_names, v.s, v.t, v.transformation, config, stop_event, message_queue)
                     for k, v in matching_results.items()]
             results = pool.starmap(register_point_cloud_pair, args)
 
@@ -189,13 +182,13 @@ def make_posegraph_for_refined_scene(ply_file_names, config, stop_event):
     else:
         for r in matching_results:
             if stop_event.is_set():
-                print(f"Stopping posegraph creation for refined scene")
+                message_queue.put("Stopping posegraph creation for refined scene")
                 break
             (matching_results[r].transformation,
              matching_results[r].information) = \
                 register_point_cloud_pair(ply_file_names,
                                           matching_results[r].s, matching_results[r].t,
-                                          matching_results[r].transformation, config, stop_event)
+                                          matching_results[r].transformation, config, stop_event, message_queue)
 
     pose_graph_new = o3d.pipelines.registration.PoseGraph()
     odometry = np.identity(4)
@@ -206,18 +199,18 @@ def make_posegraph_for_refined_scene(ply_file_names, config, stop_event):
             matching_results[r].s, matching_results[r].t,
             matching_results[r].transformation, matching_results[r].information,
             odometry, pose_graph_new)
-    print(pose_graph_new)
+    message_queue.put(str(pose_graph_new))
     o3d.io.write_pose_graph(
         join(config["path_dataset"], config["template_refined_posegraph"]),
         pose_graph_new)
 
 
-def run(config, stop_event):
-    print("refine rough registration of fragments.")
+def run(config, stop_event, message_queue):
+    message_queue.put("refine rough registration of fragments.")
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
     ply_file_names = get_file_list(
         join(config["path_dataset"], config["folder_fragment"]), ".ply")
-    make_posegraph_for_refined_scene(ply_file_names, config, stop_event)
+    make_posegraph_for_refined_scene(ply_file_names, config, stop_event, message_queue)
     if not stop_event.is_set():
         optimize_posegraph_for_refined_scene(config["path_dataset"], config)
 

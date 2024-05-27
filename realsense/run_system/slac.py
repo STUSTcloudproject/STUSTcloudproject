@@ -14,8 +14,8 @@ import os, sys
 from open3d_example import join, get_file_list, write_poses_to_log
 
 
-def run(config, stop_event):
-    print("slac non-rigid optimization.")
+def run(config, stop_event, message_queue):
+    message_queue.put("slac non-rigid optimization.")
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
 
     path_dataset = config['path_dataset']
@@ -48,7 +48,7 @@ def run(config, stop_event):
     pose_graph_updated = o3d.pipelines.registration.PoseGraph()
 
     if stop_event.is_set():
-        print("Stopping SLAC optimization")
+        message_queue.put("Stopping SLAC optimization")
         return
 
     # rigid optimization method.
@@ -60,7 +60,7 @@ def run(config, stop_event):
             ply_file_names, pose_graph_fragment, slac_params, debug_option)
 
         if stop_event.is_set():
-            print("Stopping SLAC optimization")
+            message_queue.put("Stopping SLAC optimization")
             return
 
         hashmap = ctrl_grid.get_hashmap()
@@ -81,7 +81,7 @@ def run(config, stop_event):
             .format(config["method"]))
 
     if stop_event.is_set():
-        print("Stopping SLAC optimization")
+        message_queue.put("Stopping SLAC optimization")
         return
 
     # Write updated pose graph.
@@ -94,7 +94,7 @@ def run(config, stop_event):
     params = []
     for i in range(len(pose_graph_updated.nodes)):
         if stop_event.is_set():
-            print("Stopping SLAC optimization")
+            message_queue.put("Stopping SLAC optimization")
             return
 
         fragment_pose_graph = o3d.io.read_pose_graph(
@@ -109,5 +109,5 @@ def run(config, stop_event):
     trajectory.parameters = params
 
     o3d.io.write_pinhole_camera_trajectory(
-        slac_params.get_subfolder_name() + "/optimized_trajectory_" +
-        str(config["method"]) + ".log", trajectory)
+        join(slac_params.get_subfolder_name(), "optimized_trajectory_" +
+        str(config["method"]) + ".log"), trajectory)

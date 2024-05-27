@@ -5,6 +5,7 @@ import os
 import sys
 import threading
 import multiprocessing
+import traceback
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -73,19 +74,19 @@ class ReconstructionSystem:
                 self.execute_step("make_fragments", "run", 0, self.stop_event, self.message_queue)
             if self.args.register:
                 #input("Press Enter to continue...")
-                self.execute_step("register_fragments", "run", 1, self.stop_event)
+                self.execute_step("register_fragments", "run", 1, self.stop_event, self.message_queue)
             if self.args.refine:
                 #input("Press Enter to continue...")
-                self.execute_step("refine_registration", "run", 2, self.stop_event)
+                self.execute_step("refine_registration", "run", 2, self.stop_event, self.message_queue)
             if self.args.integrate:
                 #input("Press Enter to continue...")
-                self.execute_step("integrate_scene", "run", 3, self.stop_event)
+                self.execute_step("integrate_scene", "run", 3, self.stop_event, self.message_queue)
             if self.args.slac:
                 #input("Press Enter to continue...") 
-                self.execute_step("slac", "run", 4, self.stop_event)
+                self.execute_step("slac", "run", 4, self.stop_event, self.message_queue)
             if self.args.slac_integrate:
                 #input("Press Enter to continue...")
-                self.execute_step("slac_integrate", "run", 5, self.stop_event)
+                self.execute_step("slac_integrate", "run", 5, self.stop_event, self.message_queue)
 
             self.print_elapsed_time()
         except Exception as e:
@@ -107,7 +108,9 @@ class ReconstructionSystem:
                 getattr(module, function_name)(self.config)
             self.times[index] = time.time() - start_time
         except Exception as e:
+            tb = traceback.format_exc()
             print(f"Error in execute_step {module_name}: {e}")
+            print(tb)
             self.send_to_model("show_error", {"title": f"Error in execute_step {module_name}", "message": str(e)})
 
     def print_elapsed_time(self):

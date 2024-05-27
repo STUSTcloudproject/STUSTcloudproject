@@ -15,12 +15,11 @@ import open3d as o3d
 from open3d_example import *
 
 
-def scalable_integrate_rgb_frames(path_dataset, intrinsic, config, stop_event):
+def scalable_integrate_rgb_frames(path_dataset, intrinsic, config, stop_event, message_queue):
     poses = []
     [color_files, depth_files] = get_rgbd_file_lists(path_dataset)
     n_files = len(color_files)
-    n_fragments = int(math.ceil(float(n_files) / \
-            config['n_frames_per_fragment']))
+    n_fragments = int(math.ceil(float(n_files) / config['n_frames_per_fragment']))
     volume = o3d.pipelines.integration.ScalableTSDFVolume(
         voxel_length=config["tsdf_cubic_size"] / 512.0,
         sdf_trunc=0.04,
@@ -31,7 +30,7 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config, stop_event):
 
     for fragment_id in range(len(pose_graph_fragment.nodes)):
         if stop_event.is_set():
-            print("Stopping integration for fragment", fragment_id)
+            message_queue.put(f"Stopping integration for fragment {fragment_id}")
             return
 
         pose_graph_rgbd = o3d.io.read_pose_graph(
@@ -40,15 +39,12 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config, stop_event):
 
         for frame_id in range(len(pose_graph_rgbd.nodes)):
             if stop_event.is_set():
-                print("Stopping integration for frame", frame_id_abs)
+                message_queue.put(f"Stopping integration for frame {frame_id}")
                 return
                 
-            frame_id_abs = fragment_id * \
-                    config['n_frames_per_fragment'] + frame_id
-            print(
-                "Fragment %03d / %03d :: integrate rgbd frame %d (%d of %d)." %
-                (fragment_id, n_fragments - 1, frame_id_abs, frame_id + 1,
-                 len(pose_graph_rgbd.nodes)))
+            frame_id_abs = fragment_id * config['n_frames_per_fragment'] + frame_id
+            message_queue.put(
+                f"Fragment {fragment_id:03d} / {n_fragments - 1:03d} :: integrate rgbd frame {frame_id_abs} ({frame_id + 1} of {len(pose_graph_rgbd.nodes)}).")
             rgbd = read_rgbd_image(color_files[frame_id_abs],
                                    depth_files[frame_id_abs], False, config)
             pose = np.dot(pose_graph_fragment.nodes[fragment_id].pose,
@@ -68,12 +64,12 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config, stop_event):
     write_poses_to_log(traj_name, poses)
 
 
-def run(config, stop_event):
-    print("integrate the whole RGBD sequence using estimated camera pose.")
+def run(config, stop_event, message_queue):
+    message_queue.put("integrate the whole RGBD sequence using estimated camera pose.")
     if config["path_intrinsic"]:
         intrinsic = o3d.io.read_pinhole_camera_intrinsic(
             config["path_intrinsic"])
     else:
         intrinsic = o3d.camera.PinholeCameraIntrinsic(
             o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault)
-    scalable_integrate_rgb_frames(config["path_dataset"], intrinsic, config, stop_event)
+    scalable_integrate_rgb_frames(config["path_dataset"], intrinsic, config, stop_event, message_queue)
