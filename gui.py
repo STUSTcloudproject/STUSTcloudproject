@@ -6,6 +6,7 @@ import widgets as w
 from config_manager import load_config
 class MainInterface(QWidget):
     error_signal = pyqtSignal(dict)
+    terminal_print_signal = pyqtSignal(dict)
 
     def __init__(self, callback_to_view=None):
         # 初始化主界面
@@ -40,6 +41,7 @@ class MainInterface(QWidget):
         self.images_display_panel = None
 
         self.error_signal.connect(self.handle_error_signal)
+        self.terminal_print_signal.connect(self.handle_terminal_print_signal)
 
         self.init_ui()
         self.init_item()
@@ -165,6 +167,10 @@ class MainInterface(QWidget):
     @pyqtSlot(dict)
     def handle_error_signal(self, error_data):
         self.show_error(self.config['error_dialog'], error_data["title"], error_data["message"])
+
+    @pyqtSlot(dict)
+    def handle_terminal_print_signal(self, print_data):
+        self.set_terminal_message(print_data["owner"], print_data["message"])
     
     def set_sider_bar(self, mode="Home"):
         if self.sider_bar is None:
@@ -465,6 +471,8 @@ class MainInterface(QWidget):
             self.update_image_display_panel(data['depth_image'], data['color_image'])
         elif mode == "show_error":
             self.error_signal.emit({"title": data["title"], "message": data["message"]})
+        elif mode == "terminal_print":
+            self.terminal_print_signal.emit({"owner": data["owner"], "message": data["message"]})
 
     def update_image_display_panel(self, image1_array, image2_array):
         if self.images_display_panel is not None:

@@ -57,3 +57,5 @@ class View:
             self.send_to_gui("record_imgs", data)
         elif mode == "show_error":
             self.send_to_gui("show_error", data)
+        elif mode == "terminal_print":
+            self.send_to_gui("terminal_print", data)

@@ -31,29 +31,41 @@ class ReconstructionSystem:
         self.callback = callback
         self.config = None
         self.times = [0, 0, 0, 0, 0, 0]
-        self.load_config()
         self.thread = None
         self.manager = multiprocessing.Manager()
         self.stop_event = self.manager.Event()  # 使用 multiprocessing.Manager 提供的 Event
         self.message_queue = self.manager.Queue()
+        self.monitor_event = threading.Event()
         self.monitor_thread = threading.Thread(target=self.monitor_messages)
         self.monitor_thread.start()
 
     def monitor_messages(self):
-        while not self.stop_event.is_set():
+        while not self.monitor_event.is_set():
             try:
                 message = self.message_queue.get(timeout=1)
                 if message:
+                    self.send_to_model("terminal_print", {"owner": "run_system", "message": message})
                     print(f"multiprocess : {message}")
             except:
                 continue
+        
+        # 在 monitor_event 被設置後，確保佇列中的所有訊息都被處理完畢
+        while not self.message_queue.empty():
+            try:
+                message = self.message_queue.get_nowait()
+                if message:
+                    self.send_to_model("terminal_print", {"owner": "run_system", "message": message})
+                    print(f"multiprocess : {message}")
+            except:
+                break
+        
 
-    def load_config(self):
+    def load_config(self, message_queue=None):
         try:
             if self.args.config is not None:
                 with open(self.args.config) as json_file:
                     self.config = json.load(json_file)
-                    initialize_config(self.config)
+                    initialize_config(self.config, message_queue)
                     check_folder_structure(self.config['path_dataset'])
 
             assert self.config is not None
@@ -64,6 +76,8 @@ class ReconstructionSystem:
 
     def execute(self):
         try:
+            self.load_config(self.message_queue)
+            
             print("====================================")
             print("Configuration")
             print("====================================")
@@ -88,7 +102,15 @@ class ReconstructionSystem:
                 #input("Press Enter to continue...")
                 self.execute_step("slac_integrate", "run", 5, self.stop_event, self.message_queue)
 
+            while not self.message_queue.empty():
+                time.sleep(0.5)
+
             self.print_elapsed_time()
+            if not self.stop_event.is_set():
+                self.message_queue.put("Reconstruction System finished")
+            else:
+                self.message_queue.put("Reconstruction System was forcibly stopped")
+            self.monitor_event.set()
         except Exception as e:
             print(f"Error during execution: {e}")
             self.send_to_model("show_error", {"title": "Error during execution", "message": str(e)})
@@ -115,13 +137,13 @@ class ReconstructionSystem:
 
     def print_elapsed_time(self):
         try:
-            print("====================================")
-            print("Elapsed time (in h:m:s)")
-            print("====================================")
+            self.message_queue.put("====================================")
+            self.message_queue.put("Elapsed time (in h:m:s)")
+            self.message_queue.put("====================================")
             steps = ["Making fragments", "Register fragments", "Refine registration", "Integrate frames", "SLAC", "SLAC Integrate"]
             for i, step in enumerate(steps):
-                print(f"- {step:20} {datetime.timedelta(seconds=self.times[i])}")
-            print(f"- Total               {datetime.timedelta(seconds=sum(self.times))}")
+                self.message_queue.put(f"- {step:20} {datetime.timedelta(seconds=self.times[i])}")
+            self.message_queue.put(f"- Total               {datetime.timedelta(seconds=sum(self.times))}")
             sys.stdout.flush()
         except Exception as e:
             print(f"Error printing elapsed time: {e}")
@@ -160,6 +182,8 @@ class ReconstructionSystem:
         if self.callback is not None:
             try:
                 if mode == "show_error":
+                    self.callback(mode, data)
+                elif mode == "terminal_print":
                     self.callback(mode, data)
             except Exception as e:
                 print(f"Error sending to model: {e}")

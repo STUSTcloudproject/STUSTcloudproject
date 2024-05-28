@@ -24,6 +24,8 @@ class Controller:
             self.send_to_view("record_imgs", data)
         elif mode == "show_error":
             self.send_to_view("show_error", data)
+        elif mode == "terminal_print":
+            self.send_to_view("terminal_print", data)
 
     def send_to_view(self, mode, data):
         self.view.recive_from_controller(mode, data)

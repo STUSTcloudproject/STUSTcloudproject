@@ -31,6 +31,8 @@ class Model:
             self.controller_callback(mode, data)
         elif mode == 'show_error':
             self.controller_callback(mode, data)
+        elif mode == 'terminal_print':
+            self.controller_callback(mode, data)
 
     def send_to_reconstruction_system(self, mode, data=None):
         if mode == 'start_run_system':
@@ -54,6 +56,8 @@ class Model:
 
     def recive_from_reconstruction_system(self, mode, data):
         if mode == 'show_error':
+            self.send_to_controller(mode, data)
+        elif mode == 'terminal_print':
             self.send_to_controller(mode, data)
 
     def start_reconstruction_system(self, mode, data):

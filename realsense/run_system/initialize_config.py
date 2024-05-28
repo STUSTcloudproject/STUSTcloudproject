@@ -15,7 +15,7 @@ import json
 from os.path import isfile, join, splitext, dirname, basename
 from warnings import warn
 from data_loader import lounge_data_loader, bedroom_data_loader, jackjack_data_loader
-
+import multiprocessing
 
 def extract_rgbd_frames(rgbd_video_file):
     """
@@ -45,7 +45,7 @@ def set_default_value(config, key, value):
         config[key] = value
 
 
-def initialize_config(config):
+def initialize_config(config, message_queue):
 
     # set default parameters if not specified
     set_default_value(config, "depth_map_type", "redwood")
@@ -104,7 +104,10 @@ def initialize_config(config):
     if config["path_dataset"].endswith(".bag"):
         assert os.path.isfile(config["path_dataset"]), (
             f"File {config['path_dataset']} not found.")
-        print("Extracting frames from RGBD video file")
+        if message_queue is not None:
+            message_queue.put("Extracting frames from RGBD video file")
+        else:
+            print("Extracting frames from RGBD video file")
         config["path_dataset"], config["path_intrinsic"], config[
             "depth_scale"] = extract_rgbd_frames(config["path_dataset"])
 
