@@ -38,6 +38,9 @@ class View:
                 selected_items_dict=selected_items_dict, 
                 selected_path=selected_path
                 )
+           
+        elif mode == "start_view_system":
+            self.send_to_controller(mode)
 
 
     def set_controller_callback(self, controller_callback):

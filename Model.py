@@ -8,6 +8,7 @@ class Model:
         self.controller_callback = None
         self.recorder = None
         self.reconstruction_system = None
+        self.view_system = None
 
 
     def recive_from_controller(self, config_dict):
@@ -25,6 +26,9 @@ class Model:
 
         elif config_dict['mode'] == 'start_run_system':
             self.send_to_reconstruction_system('start_run_system', data=config_dict)
+
+        elif config_dict['mode'] == 'start_view_system':
+            self.send_to_view_system('start_view_system')
              
     def send_to_controller(self, mode, data):
         if mode == 'record_imgs':
@@ -33,6 +37,11 @@ class Model:
             self.controller_callback(mode, data)
         elif mode == 'terminal_print':
             self.controller_callback(mode, data)
+
+    def send_to_view_system(self, mode):
+        if mode == 'start_view_system':
+            self.view_system = rs.ViewSystem(self.recive_from_view_system)
+            self.view_system.run()
 
     def send_to_reconstruction_system(self, mode, data=None):
         if mode == 'start_run_system':
@@ -55,6 +64,12 @@ class Model:
             self.send_to_controller(mode, data)
 
     def recive_from_reconstruction_system(self, mode, data):
+        if mode == 'show_error':
+            self.send_to_controller(mode, data)
+        elif mode == 'terminal_print':
+            self.send_to_controller(mode, data)
+
+    def recive_from_view_system(self, mode, data):
         if mode == 'show_error':
             self.send_to_controller(mode, data)
         elif mode == 'terminal_print':

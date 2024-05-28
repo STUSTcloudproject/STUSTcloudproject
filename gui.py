@@ -399,7 +399,7 @@ class MainInterface(QWidget):
                 self.activated = True
                 
                 self.set_terminal_message("start_bar", f"Send selected items to Controller: {self.current_mode} {selected_items_dict}")
-                self.send_to_view("send_selected_items", selected_items_dict)
+                self.send_to_view("send_view_selected_items", selected_items_dict)
         else:
             self.set_terminal_message("start_bar", "ERROR! The system is already running.")
             self.show_error(self.config['error_dialog'], "Error", "The system is already running.")
@@ -453,6 +453,8 @@ class MainInterface(QWidget):
                 selected_items_dict=selected_items_dict, 
                 selected_path=selected_path,
                 )
+        elif mode == "send_view_selected_items":
+            self.callback_to_view("start_view_system")
             
         elif mode == "get_realsense_profiles":
             return self.callback_to_view("get_realsense_profiles")

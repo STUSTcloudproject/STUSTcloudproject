@@ -5,6 +5,8 @@ from realsense.record import Args, Preset, RealSenseRecorder, get_profiles
 
 from realsense.run_system import Args_run_system, ReconstructionSystem
 
+from realsense.view import ViewSystem
+
 # Optionally, you can provide a brief documentation or comments about the imported modules
 """
 realsense module
