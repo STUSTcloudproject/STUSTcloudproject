@@ -78,11 +78,11 @@ class ReconstructionSystem:
         try:
             self.load_config(self.message_queue)
             
-            print("====================================")
-            print("Configuration")
-            print("====================================")
+            self.message_queue.put("====================================")
+            self.message_queue.put("Configuration")
+            self.message_queue.put("====================================")
             for key, val in self.config.items():
-                print(f"{key:40} : {val}")
+                self.message_queue.put(f"{key:40} : {val}")
 
             if self.args.make:
                 self.execute_step("make_fragments", "run", 0, self.stop_event, self.message_queue)
