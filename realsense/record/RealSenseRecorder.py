@@ -7,6 +7,11 @@ from os.path import exists, join
 import shutil
 import json
 from enum import IntEnum
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from point_cloud_manager import PointCloudManager
+import traceback
 
 class Args:
     def __init__(self, output_folder, record_rosbag, record_imgs, playback_rosbag, overwrite, width=640, height=480, depth_fmt=rs.format.z16, color_fmt=rs.format.rgb8, fps=30):
@@ -44,6 +49,7 @@ class RealSenseRecorder:
         self.depth_image = None
         self.color_image = None
         self.bg_removed = None
+        self.point_cloud_manager = None
 
         if callback:
             self.callback = callback
@@ -128,16 +134,19 @@ class RealSenseRecorder:
 
     def start_recording(self):
         """启动录制"""
-        try:
-            if not self.args.playback_rosbag:
-                if self.is_running:
+        def recording_thread():
+            try:
+                if not self.args.playback_rosbag:
                     self.stop_pipeline()  # Stop the current pipeline before reconfiguring streams
-                self.is_recording = True
-                self.configure_streams(preview=False)  # Reconfigure streams for recording
-                self.start_pipeline()
-        except Exception as e:
-            print(f"Error starting recording: {e}")
-            self.send_to_model("show_error", {"title": "Error starting recording", "message": str(e)})
+                    self.is_recording = True
+                    self.configure_streams(preview=False)  # Reconfigure streams for recording
+                    self.start_pipeline()
+            except Exception as e:
+                print(f"Error starting recording: {e}")
+                self.send_to_model("show_error", {"title": "Error starting recording", "message": str(e)})
+
+        # 在单独的线程中执行耗时操作
+        threading.Thread(target=recording_thread).start()
 
     def stop_recording(self):
         """停止录制"""
@@ -220,6 +229,8 @@ class RealSenseRecorder:
 
     def record(self):
         try:
+            #self.point_cloud_manager = PointCloudManager()
+
             profile = self.pipeline.start(self.config)
             depth_sensor = profile.get_device().first_depth_sensor()
             if self.args.record_rosbag or self.args.record_imgs:
@@ -229,40 +240,59 @@ class RealSenseRecorder:
             align = rs.align(rs.stream.color)
             frame_count = 0
             while self.is_running:
-                frames = self.pipeline.wait_for_frames()
-                aligned_frames = align.process(frames)
-                aligned_depth_frame = aligned_frames.get_depth_frame()
-                color_frame = aligned_frames.get_color_frame()
-                if not aligned_depth_frame or not color_frame:
-                    continue
-                self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
-                self.color_image = np.asanyarray(color_frame.get_data())
-                if self.is_recording and self.args.record_imgs:
-                    if frame_count == 0:
-                        self.save_intrinsic_as_json(join(self.path_output, "camera_intrinsic.json"), color_frame)
-                    cv2.imwrite(f"{self.path_depth}/{frame_count:06d}.png", self.depth_image)
-                    cv2.imwrite(f"{self.path_color}/{frame_count:06d}.jpg", self.color_image)
-                    frame_count += 1
-                self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
-                
-                self.depth_image = cv2.applyColorMap(
-                    cv2.convertScaleAbs(self.depth_image, alpha=0.09), cv2.COLORMAP_JET)
-                
-                self.send_to_model("record_imgs", {"depth_image": self.depth_image, "color_image": self.bg_removed})
-                if cv2.waitKey(1) == 27:
-                    cv2.destroyAllWindows()
-                    break
+                try:
+                    frames = self.pipeline.wait_for_frames()
+                    aligned_frames = align.process(frames)
+                    aligned_depth_frame = aligned_frames.get_depth_frame()
+                    color_frame = aligned_frames.get_color_frame()
+                    if not aligned_depth_frame or not color_frame:
+                        continue
+                    self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
+                    self.color_image = np.asanyarray(color_frame.get_data())
+
+                    # 获取相机内参
+                    intrinsics = aligned_depth_frame.profile.as_video_stream_profile().intrinsics
+
+                    # 将点云数据传送到 PointCloudManager
+                    #self.point_cloud_manager.add_point_cloud(self.depth_image, intrinsics)
+
+                    if self.is_recording and self.args.record_imgs:
+                        if frame_count == 0:
+                            self.save_intrinsic_as_json(join(self.path_output, "camera_intrinsic.json"), color_frame)
+                        cv2.imwrite(f"{self.path_depth}/{frame_count:06d}.png", self.depth_image)
+                        cv2.imwrite(f"{self.path_color}/{frame_count:06d}.jpg", self.color_image)
+                        frame_count += 1
+
+                    self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
+
+                    self.depth_image = cv2.applyColorMap(
+                        cv2.convertScaleAbs(self.depth_image, alpha=0.09), cv2.COLORMAP_JET)
+
+                    self.send_to_model("record_imgs", {"depth_image": self.depth_image, "color_image": self.bg_removed})
+                    if cv2.waitKey(1) == 27:
+                        cv2.destroyAllWindows()
+                        break
+                except RuntimeError as e:
+                    print(f"Error processing frames: {e}")
+                    break  # 跳出循环，以便在 finally 中进行清理
         except RuntimeError as e:
-            print(f"Error during recording: {e}")
+            tb = traceback.format_exc()
+            print(f"Error during recording: {e}\n{tb}")
             self.send_to_model("show_error", {"title": "Error during recording", "message": str(e)})
         finally:
             try:
                 if self.is_running:
                     self.pipeline.stop()
                     self.is_running = False
+                #if self.point_cloud_manager is not None:
+                    # 关闭点云可视化窗口
+                    #self.point_cloud_manager.close_visualizer()
             except Exception as e:
                 print(f"Error stopping pipeline in record: {e}")
                 self.send_to_model("show_error", {"title": "Error stopping pipeline in record", "message": str(e)})
+
+
+
 
     def recive_from_model(self, mode, data=None):
         try:
