@@ -204,11 +204,11 @@ class MainInterface(QWidget):
                 for group_name, group_info in mode_settings.items():
                     extra_data = {
                         "description": ", ".join(group_info['description']),
-                        "mode": mode_key
+                        "mode": mode_key,
                     }
                     group = self.treeWidget.addGroup(group_name, extra_data)
                     for name, description in zip(group_info['name'], group_info['description']):
-                        widget = w.SettingsWidget(name, description, parent=self.treeWidget)
+                        widget = w.SettingsWidget(name, description, group_name, parent=self.treeWidget)
                         self.treeWidget.addItem(group, widget, name)
             
             self.sider_bar.addToLayout(self.treeWidget)

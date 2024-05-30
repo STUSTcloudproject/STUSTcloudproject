@@ -136,6 +136,10 @@
                 "Required": {
                     "name": ["Record imgs", "Record rosbag", "Playback rosbag"],
                     "description": ["錄製rgbd文件", "錄製.bag文件", "回放.bag文件"]
+                },
+                "Optional": {
+                    "name": ["Point Cloud"],
+                    "description": ["即時處理點雲"]
                 }
             },
             "RunSystem": {
@@ -213,6 +217,14 @@
       "title_font_size": "24pt",
       "content_font_size": "12pt"
     },
+    "Point Cloud": {
+        "title": "Point Cloud",
+        "content": "此功能允許在獲取數據時，即時的進行重疊區域的計算。",
+        "background_color": "#1E1E1E",
+        "font_color": "#DCDCDC",
+        "title_font_size": "24pt",
+        "content_font_size": "12pt"
+      },
     "Make": {
       "title": "Make",
       "content": "此功能允許用戶製作點雲碎片。用戶可以選擇原始數據並開始製作過程，生成的碎片將保存到指定位置。",

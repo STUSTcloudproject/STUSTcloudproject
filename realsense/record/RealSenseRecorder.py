@@ -16,10 +16,11 @@ import traceback
 import ctypes
 
 class Args:
-    def __init__(self, output_folder, record_rosbag, record_imgs, playback_rosbag, overwrite, width=640, height=480, depth_fmt=rs.format.z16, color_fmt=rs.format.rgb8, fps=30):
+    def __init__(self, output_folder, record_rosbag, record_imgs, playback_rosbag, calculate_overlap, overwrite, width=640, height=480, depth_fmt=rs.format.z16, color_fmt=rs.format.rgb8, fps=30):
         self.output_folder = output_folder
         self.record_rosbag = record_rosbag
         self.record_imgs = record_imgs
+        self.calculate_overlap = calculate_overlap
         self.playback_rosbag = playback_rosbag
         self.overwrite = overwrite
         self.width = width

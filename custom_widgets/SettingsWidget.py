@@ -4,11 +4,12 @@ from PyQt5.QtCore import Qt
 from custom_widgets.ColoredWidget import ColoredWidget
 
 class SettingsWidget(QWidget):
-    def __init__(self, title, description, parent=None):
+    def __init__(self, title, description, group_name, parent=None):
         super().__init__(parent)
         self.unselected_color = QColor(200, 200, 200)
         self.selected_color = QColor(0, 120, 215)  # Bright blue
         self.title = title
+        self.group_name = group_name
         self.is_selected = False  # Initial state is unselected
         self.setup_layout()
         self.setup_left_widget(title, description)
@@ -61,6 +62,9 @@ class SettingsWidget(QWidget):
 
     def get_selected(self):
         return self.is_selected
+
+    def get_group_name(self):
+        return self.group_name
 
     def setWidgetVisibility(self, visible):
         self.setVisible(visible)

@@ -53,16 +53,16 @@ class ConfigurableTree(QTreeWidget):
         custom_data = item.data(0, Qt.UserRole)
         if not isinstance(custom_data, dict):
             widget = self.itemWidget(item, 0)
-            if self.selectionMode == 'single' and widget.get_selected() is False:
-                self.setAllItemsSelection(False)
+            if self.selectionMode == 'single' and widget.get_selected() is False and widget.get_group_name() == 'Required':
+                self.setRequiredItemsSelection(False)
             widget.toggle_selection()
 
-    def setAllItemsSelection(self, selected):
+    def setRequiredItemsSelection(self, selected):
         iterator = QTreeWidgetItemIterator(self)
         while iterator.value():
             item = iterator.value()
             widget = self.itemWidget(item, 0)
-            if widget and hasattr(widget, 'toggle_selection'):
+            if widget and hasattr(widget, 'toggle_selection') and widget.get_group_name() == 'Required':
                 widget.toggle_selection(selected)
             iterator += 1
 
