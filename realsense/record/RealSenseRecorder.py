@@ -10,8 +10,10 @@ from enum import IntEnum
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from point_cloud_manager import PointCloudManager
+from point_cloud_manager import PointCloudManager, run_point_cloud_manager
+import multiprocessing
 import traceback
+import ctypes
 
 class Args:
     def __init__(self, output_folder, record_rosbag, record_imgs, playback_rosbag, overwrite, width=640, height=480, depth_fmt=rs.format.z16, color_fmt=rs.format.rgb8, fps=30):
@@ -50,6 +52,10 @@ class RealSenseRecorder:
         self.color_image = None
         self.bg_removed = None
         self.point_cloud_manager = None
+        self.depth_image_shape = (self.args.height, self.args.width)
+        self.shared_depth_image = multiprocessing.Array(ctypes.c_uint16, int(np.prod(self.depth_image_shape)))
+        self.data_queue = multiprocessing.Queue()
+        self.stop_event = multiprocessing.Event()
 
         if callback:
             self.callback = callback
@@ -229,7 +235,9 @@ class RealSenseRecorder:
 
     def record(self):
         try:
-            #self.point_cloud_manager = PointCloudManager()
+            # 啟動 PointCloudManager 進程
+            p = multiprocessing.Process(target=run_point_cloud_manager, args=(self.depth_image_shape, self.data_queue, self.shared_depth_image, self.stop_event))
+            p.start()
 
             profile = self.pipeline.start(self.config)
             depth_sensor = profile.get_device().first_depth_sensor()
@@ -252,9 +260,18 @@ class RealSenseRecorder:
 
                     # 获取相机内参
                     intrinsics = aligned_depth_frame.profile.as_video_stream_profile().intrinsics
+                    intrinsics_dict = {
+                        'width': intrinsics.width,
+                        'height': intrinsics.height,
+                        'fx': intrinsics.fx,
+                        'fy': intrinsics.fy,    
+                        'ppx': intrinsics.ppx,
+                        'ppy': intrinsics.ppy
+                    }
 
-                    # 将点云数据传送到 PointCloudManager
-                    #self.point_cloud_manager.add_point_cloud(self.depth_image, intrinsics)
+                    # 將點雲數據傳送到 PointCloudManager
+                    np.copyto(np.frombuffer(self.shared_depth_image.get_obj(), dtype=np.uint16).reshape(self.depth_image_shape), self.depth_image)
+                    self.data_queue.put(intrinsics_dict)
 
                     if self.is_recording and self.args.record_imgs:
                         if frame_count == 0:
@@ -273,7 +290,8 @@ class RealSenseRecorder:
                         cv2.destroyAllWindows()
                         break
                 except RuntimeError as e:
-                    print(f"Error processing frames: {e}")
+                    tb = traceback.format_exc()
+                    print(f"Error processing frames: {e}\n{tb}")
                     break  # 跳出循环，以便在 finally 中进行清理
         except RuntimeError as e:
             tb = traceback.format_exc()
@@ -284,14 +302,14 @@ class RealSenseRecorder:
                 if self.is_running:
                     self.pipeline.stop()
                     self.is_running = False
-                #if self.point_cloud_manager is not None:
-                    # 关闭点云可视化窗口
-                    #self.point_cloud_manager.close_visualizer()
+                self.stop_event.set()  # 設置停止事件
+                p.join()
             except Exception as e:
                 print(f"Error stopping pipeline in record: {e}")
                 self.send_to_model("show_error", {"title": "Error stopping pipeline in record", "message": str(e)})
 
 
+    
 
 
     def recive_from_model(self, mode, data=None):
