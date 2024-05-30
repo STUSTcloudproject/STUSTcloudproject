@@ -151,6 +151,9 @@ class RealSenseRecorder:
                 print(f"Error starting recording: {e}")
                 self.send_to_model("show_error", {"title": "Error starting recording", "message": str(e)})
 
+        # 清除停止事件，確保錄製正常開始
+        self.stop_event.clear()
+
         # 在单独的线程中执行耗时操作
         threading.Thread(target=recording_thread).start()
 
@@ -158,6 +161,7 @@ class RealSenseRecorder:
         """停止录制"""
         try:
             self.is_recording = False
+            self.stop_event.set()  # 設置停止事件
         except Exception as e:
             print(f"Error stopping recording: {e}")
             self.send_to_model("show_error", {"title": "Error stopping recording", "message": str(e)})
