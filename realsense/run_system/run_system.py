@@ -63,7 +63,7 @@ class ReconstructionSystem:
     def load_config(self, message_queue=None):
         try:
             if self.args.config is not None:
-                with open(self.args.config) as json_file:
+                with open(self.args.config, encoding='utf-8') as json_file:
                     self.config = json.load(json_file)
                     initialize_config(self.config, message_queue)
                     check_folder_structure(self.config['path_dataset'])
@@ -71,7 +71,8 @@ class ReconstructionSystem:
             assert self.config is not None
             self.config['debug_mode'] = self.args.debug_mode
         except Exception as e:
-            print(f"Error loading config: {e}")
+            tb = traceback.format_exc()
+            print(f"Error loading config: {e}\n{tb}")
             self.send_to_model("show_error", {"title": "Error loading config", "message": str(e)})
 
     def execute(self):
@@ -112,7 +113,8 @@ class ReconstructionSystem:
                 self.message_queue.put("Reconstruction System was forcibly stopped")
             self.monitor_event.set()
         except Exception as e:
-            print(f"Error during execution: {e}")
+            tb = traceback.format_exc()
+            print(f"Error during execution: {e}\n{tb}")
             self.send_to_model("show_error", {"title": "Error during execution", "message": str(e)})
 
     def execute_step(self, module_name, function_name, index, stop_event=None, message_queue=None):
