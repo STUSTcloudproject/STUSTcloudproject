@@ -53,6 +53,7 @@ class RealSenseRecorder:
         self.color_image = None
         self.bg_removed = None
         self.point_cloud_manager = None
+        self.intrinsics_dict = None
         self.depth_image_shape = (self.args.height, self.args.width)
         self.shared_depth_image = multiprocessing.Array(ctypes.c_uint16, int(np.prod(self.depth_image_shape)))
         self.data_queue = multiprocessing.Queue()
@@ -208,6 +209,25 @@ class RealSenseRecorder:
             depth_scale = depth_sensor.get_depth_scale()
             clipping_distance = 3 / depth_scale  # 3 meters
             align = rs.align(rs.stream.color)
+
+            if self.args.calculate_overlap and self.args.playback_rosbag:
+                aligned_frames = self.pipeline.wait_for_frames()
+                aligned_depth_frame = aligned_frames.get_depth_frame()
+                intrinsics = aligned_depth_frame.profile.as_video_stream_profile().intrinsics
+                self.intrinsics_dict = {
+                    'width': intrinsics.width,
+                    'height': intrinsics.height,
+                    'fx': intrinsics.fx,
+                    'fy': intrinsics.fy,
+                    'ppx': intrinsics.ppx,
+                    'ppy': intrinsics.ppy
+                }
+                self.depth_image_shape = (intrinsics.height, intrinsics.width)
+
+                self.shared_depth_image = multiprocessing.Array(ctypes.c_uint16, int(np.prod(self.depth_image_shape)))
+                # 啟動 PointCloudManager 進程
+                p = multiprocessing.Process(target=run_point_cloud_manager, args=(self.depth_image_shape, self.data_queue, self.shared_depth_image, self.stop_event, self.intrinsics_dict))
+                p.start()
             while self.is_running:
                 frames = self.pipeline.wait_for_frames()
                 aligned_frames = align.process(frames)
@@ -217,6 +237,12 @@ class RealSenseRecorder:
                     continue
                 self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
                 self.color_image = np.asanyarray(color_frame.get_data())
+
+                if self.args.calculate_overlap and self.args.playback_rosbag:
+                    # 將點雲數據傳送到 PointCloudManager
+                    np.copyto(np.frombuffer(self.shared_depth_image.get_obj(), dtype=np.uint16).reshape(self.depth_image_shape), self.depth_image)
+                    self.data_queue.put(True)
+
                 self.bg_removed = self.remove_background(self.depth_image, self.color_image, clipping_distance)
                 
                 self.depth_image = cv2.applyColorMap(
@@ -234,17 +260,15 @@ class RealSenseRecorder:
                 try:
                     self.pipeline.stop()
                     self.is_running = False
+                    if self.args.calculate_overlap and self.args.playback_rosbag:
+                        self.stop_event.set()  # 設置停止事件
+                        p.join()
                 except Exception as e:
                     print(f"Error stopping pipeline in preview: {e}")
                     self.send_to_model("show_error", {"title": "Error stopping pipeline in preview", "message": str(e)})
 
     def record(self):
         try:
-            if self.args.calculate_overlap:
-                # 啟動 PointCloudManager 進程
-                p = multiprocessing.Process(target=run_point_cloud_manager, args=(self.depth_image_shape, self.data_queue, self.shared_depth_image, self.stop_event))
-                p.start()
-
             profile = self.pipeline.start(self.config)
             depth_sensor = profile.get_device().first_depth_sensor()
             if self.args.record_rosbag or self.args.record_imgs:
@@ -252,6 +276,27 @@ class RealSenseRecorder:
             depth_scale = depth_sensor.get_depth_scale()
             clipping_distance = 3 / depth_scale  # 3 meters
             align = rs.align(rs.stream.color)
+            
+            if self.args.calculate_overlap:
+                # 获取并保存内参
+                aligned_frames = self.pipeline.wait_for_frames()
+                aligned_depth_frame = aligned_frames.get_depth_frame()
+                intrinsics = aligned_depth_frame.profile.as_video_stream_profile().intrinsics
+                self.intrinsics_dict = {
+                    'width': intrinsics.width,
+                    'height': intrinsics.height,
+                    'fx': intrinsics.fx,
+                    'fy': intrinsics.fy,
+                    'ppx': intrinsics.ppx,
+                    'ppy': intrinsics.ppy
+                }
+                self.depth_image_shape = (intrinsics.height, intrinsics.width)
+                
+                self.shared_depth_image = multiprocessing.Array(ctypes.c_uint16, int(np.prod(self.depth_image_shape)))
+                # 啟動 PointCloudManager 進程
+                p = multiprocessing.Process(target=run_point_cloud_manager, args=(self.depth_image_shape, self.data_queue, self.shared_depth_image, self.stop_event, self.intrinsics_dict))
+                p.start()
+
             frame_count = 0
             while self.is_running:
                 try:
@@ -263,22 +308,11 @@ class RealSenseRecorder:
                         continue
                     self.depth_image = np.asanyarray(aligned_depth_frame.get_data())
                     self.color_image = np.asanyarray(color_frame.get_data())
-
+                    
                     if self.args.calculate_overlap:
-                        # 获取相机内参
-                        intrinsics = aligned_depth_frame.profile.as_video_stream_profile().intrinsics
-                        intrinsics_dict = {
-                            'width': intrinsics.width,
-                            'height': intrinsics.height,
-                            'fx': intrinsics.fx,
-                            'fy': intrinsics.fy,    
-                            'ppx': intrinsics.ppx,
-                            'ppy': intrinsics.ppy
-                        }
-
                         # 將點雲數據傳送到 PointCloudManager
                         np.copyto(np.frombuffer(self.shared_depth_image.get_obj(), dtype=np.uint16).reshape(self.depth_image_shape), self.depth_image)
-                        self.data_queue.put(intrinsics_dict)
+                        self.data_queue.put(True)
 
                     if self.is_recording and self.args.record_imgs:
                         if frame_count == 0:
@@ -315,9 +349,6 @@ class RealSenseRecorder:
             except Exception as e:
                 print(f"Error stopping pipeline in record: {e}")
                 self.send_to_model("show_error", {"title": "Error stopping pipeline in record", "message": str(e)})
-
-
-    
 
 
     def recive_from_model(self, mode, data=None):
