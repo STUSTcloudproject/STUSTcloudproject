@@ -54,8 +54,8 @@ class RealSenseRecorder:
         self.bg_removed = None
         self.point_cloud_manager = None
         self.intrinsics_dict = None
-        self.depth_image_shape = (self.args.height, self.args.width)
-        self.shared_depth_image = multiprocessing.Array(ctypes.c_uint16, int(np.prod(self.depth_image_shape)))
+        self.depth_image_shape = None
+        self.shared_depth_image = None
         self.data_queue = multiprocessing.Queue()
         self.stop_event = multiprocessing.Event()
 
