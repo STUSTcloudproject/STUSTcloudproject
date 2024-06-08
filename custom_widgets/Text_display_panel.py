@@ -3,6 +3,18 @@ from PyQt5.QtCore import Qt
 
 class TextDisplayPanel(QWidget):
     def __init__(self, parent=None, title="title", content="content", background_color="#1E1E1E", font_color="#DCDCDC", title_font_size="18pt", content_font_size="12pt"):
+        """
+        初始化 TextDisplayPanel。
+
+        參數:
+        parent (QWidget, optional): 父級窗口。預設為 None。
+        title (str, optional): 顯示的標題。預設為 "title"。
+        content (str, optional): 顯示的內容。預設為 "content"。
+        background_color (str, optional): 背景顏色。預設為 "#1E1E1E"。
+        font_color (str, optional): 字體顏色。預設為 "#DCDCDC"。
+        title_font_size (str, optional): 標題字體大小。預設為 "18pt"。
+        content_font_size (str, optional): 內容字體大小。預設為 "12pt"。
+        """
         super().__init__(parent)
         self.title = title
         self.content = content
@@ -13,11 +25,14 @@ class TextDisplayPanel(QWidget):
         self.initUI()
     
     def initUI(self):
-        # Set overall layout
+        """
+        初始化用戶界面。
+        """
+        # 設置總佈局
         layout = QVBoxLayout(self)
         self.setStyleSheet(f"background-color: {self.background_color};")
         
-        # Create title widget and set properties
+        # 創建標題小工具並設置屬性
         self.title_widget = QWidget(self)
         self.title_layout = QVBoxLayout(self.title_widget)
         self.title_label = QLabel(self.title, self.title_widget)
@@ -30,12 +45,12 @@ class TextDisplayPanel(QWidget):
         self.title_layout.addWidget(self.title_label)
         self.title_widget.setLayout(self.title_layout)
         
-        # Create content widget and set properties
+        # 創建內容小工具並設置屬性
         self.content_widget = QWidget(self)
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_text = QTextEdit(self.content_widget)
-        self.content_text.setReadOnly(True)
-        self.content_text.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.content_text.setReadOnly(True)  # 設置為只讀
+        self.content_text.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)  # 根據需要顯示垂直滾動條
         self.content_text.setStyleSheet(f"""
             background-color: {self.background_color};
             color: {self.font_color};
@@ -43,7 +58,7 @@ class TextDisplayPanel(QWidget):
             font-size: {self.content_font_size};
             font-family: 'Consolas', 'Courier New', 'Lucida Console', monospace;
         """)
-        self.content_text.setMarkdown(self.content)
+        self.content_text.setMarkdown(self.content)  # 設置內容為 Markdown 格式
         self.content_layout.addWidget(self.content_text)
         self.content_widget.setLayout(self.content_layout)
 
@@ -51,7 +66,7 @@ class TextDisplayPanel(QWidget):
         layout.addWidget(self.content_widget)
         self.setLayout(layout)
 
-# Main program execution
+# 主程序執行
 if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
