@@ -6,6 +6,7 @@
 
 ```plaintext
 custom_widgets/
+├── __init__.py
 ├── MainQWidget.py              # 主要的 QWidget 小部件，作為應用程序的主窗口
 ├── ButtonWidget.py             # 自定義按鈕小部件，支持設置圖標、顏色和回調函數
 ├── SettingsWidget.py           # 設置小部件，用於顯示和調整應用程序的設置選項
@@ -16,4 +17,5 @@ custom_widgets/
 ├── TerminalWidget.py           # 終端小部件，用於模擬終端輸入輸出
 ├── ErrorDialog.py              # 錯誤對話框，用於顯示錯誤消息
 ├── ContentSplitterWidget.py    # 內容分割小部件，支持水平方向和垂直方向的內容分割
-└── ColoredWidget.py            # 帶顏色的小部件，用於設置背景顏色和顯示內容
+├── ColoredWidget.py            # 帶顏色的小部件，用於設置背景顏色和顯示內容
+└── README.md
