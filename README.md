@@ -8,8 +8,6 @@
 
 - [安裝和配置](#安裝和配置)
 - [使用說明](#使用說明)
-- [貢獻指南](#貢獻指南)
-- [版權和許可](#版權和許可)
 - [詳細文檔](#詳細文檔)
 
 ## 安裝和配置
@@ -48,20 +46,6 @@
     - `Record`：錄製各種類型的數據，包括圖像和 .bag 文件
     - `RunSystem`：進行點雲數據處理
     - `View`：查看錄製和處理的點雲數據
-
-## 貢獻指南
-
-歡迎各界人士對本項目進行貢獻。請遵循以下步驟進行貢獻：
-
-1. Fork 本存儲庫
-2. 創建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
-4. Push 到分支 (`git push origin feature/AmazingFeature`)
-5. 打開一個 Pull Request
-
-## 版權和許可
-
-本項目採用 MIT 許可證。詳情請參閱 LICENSE 文件。
 
 ## 詳細文檔
 
