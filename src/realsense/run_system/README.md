@@ -17,4 +17,5 @@ realsense/run_system/
 ├── color_map_optimization_for_..._system.py        # 用於優化重建系統的色彩地圖
 ├── data_loader.py                                  # 數據加載器，包含不同數據集的加載功能
 ├── initialize_config.py                            # 初始化配置的模塊
-└── open3d_example.py                               # Open3D 的示例和實用工具
+├── open3d_example.py                               # Open3D 的示例和實用工具
+└── README.md
