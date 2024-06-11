@@ -6,7 +6,7 @@
 
 ```plaintext
 custom_widgets/
-├── __init__.py
+├── __init__.py                 # 初始化文件，匯入和整合各個模塊
 ├── MainQWidget.py              # 主要的 QWidget 小部件，作為應用程序的主窗口
 ├── ButtonWidget.py             # 自定義按鈕小部件，支持設置圖標、顏色和回調函數
 ├── SettingsWidget.py           # 設置小部件，用於顯示和調整應用程序的設置選項
