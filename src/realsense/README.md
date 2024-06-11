@@ -9,4 +9,5 @@ realsense/
 ├── __init__.py                 # 初始化文件，匯入和整合各個模塊
 ├── record/                     # 負責數據記錄
 ├── run_system/                 # 負責數據重建
-└── view/                       # 負責數據視圖顯示
+├── view/                       # 負責數據視圖顯示
+└── README.md
