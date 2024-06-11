@@ -15,14 +15,14 @@
 ### 前置條件
 
 請確保已安裝以下軟件：
-- Python 3.7 或更高版本
+- Python 3.10
 - pip
 
 ### 安裝步驟
 
 1. 克隆此存儲庫到本地：
     ```bash
-    git clone https://github.com/your_username/your_repository.git
+    git clone https://github.com/STUSTcloudproject/O3d_gui
     ```
 
 2. 進入項目目錄並安裝所需依賴：
