@@ -5,6 +5,7 @@
 ## [0.1.1] - 2023-06-10
 ### Added
 - 新增README。
+- 新增 CHANGELOG.md。
 - 新增 gui.py 代碼註解。
 
 ### Improved
