@@ -4,12 +4,26 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtCore import QSize, Qt, pyqtSignal, pyqtSlot
 import widgets as w
 from config_manager import load_config
+
 class MainInterface(QWidget):
+    """
+    主界面類別，繼承自 QWidget。
+
+    屬性:
+    error_signal (pyqtSignal): 自訂錯誤訊號。
+    terminal_print_signal (pyqtSignal): 自訂終端輸出訊號。
+    """
+
     error_signal = pyqtSignal(dict)
     terminal_print_signal = pyqtSignal(dict)
 
     def __init__(self, callback_to_view=None):
-        # 初始化主界面
+        """
+        初始化主界面。
+
+        參數:
+        callback_to_view (callable, optional): 回調函數。預設為 None。
+        """
         super().__init__()
         self.config = load_config('config.json')
         
@@ -47,10 +61,18 @@ class MainInterface(QWidget):
         self.init_item()
 
     def set_callback_to_View(self, callback):
+        """
+        設置回調函數。
+
+        參數:
+        callback (callable): 回調函數。
+        """
         self.callback_to_view = callback
 
     def init_ui(self):
-        # 主界面的配置，這裡直接使用tuple來傳遞顏色和尺寸
+        """
+        初始化用戶界面 (UI)。
+        """
         ui_config = self.config['ui']
         self_color = ui_config['colors']['main_background']
         main_colors = ui_config['colors']['panels']['main']
@@ -77,7 +99,6 @@ class MainInterface(QWidget):
         self.sider_bar = self.main_splitter.get_panel1()
         self.main_splitter_panel2 = self.main_splitter.get_panel2()
         
-        # 嵌套的MainQWidget實例，用於設置panel2的內容
         self.nested_widget = w.MainQWidget(
             self,
             self_color=self_color,
@@ -92,31 +113,34 @@ class MainInterface(QWidget):
         self.display_panel = self.nested_splitter.get_panel1()
         self.terminal_panel = self.nested_splitter.get_panel2()
 
-        # 將nested_widget設為panel2的內容
         self.main_splitter_panel2.clearAndAddWidget(self.nested_widget)
 
-        # 設置佈局                                                                                                                                                                                                                                                                                                                                                                                                                                  
         layout = QVBoxLayout(self)
         self.setZeroMarginsAndSpacing(layout)
         layout.addWidget(self.main_layout_widget)
         self.setLayout(layout)
 
     def init_item(self):
-        # 設置按鈕欄和側邊欄的內容 
+        """
+        初始化界面上的項目。
+        """
         self.set_activity_bar(self.config['buttons']['activity_bar'])
         self.set_sider_bar(mode="init")
         self.set_start_bar(self.config['buttons']['start_bar']['Home'])
-        #增加對display_panel的設置
         self.initialize_display_panels()
-        # 設置terminal
         self.set_terminal(self.config['terminal'])
 
     def initialize_display_panels(self):
-        # 初始化所有显示面板
+        """
+        初始化所有顯示面板。
+        """
         self.create_images_display_panel()
         self.set_text_display_panel("Home")
 
     def create_images_display_panel(self):
+        """
+        創建圖像顯示面板。
+        """
         self.images_display_panel = w.ImagesDisplayPanel(
             image1_array=None, 
             image2_array=None,
@@ -126,6 +150,15 @@ class MainInterface(QWidget):
         self.images_display_panel.setVisible(False)
 
     def get_or_create_text_display_panel(self, mode):
+        """
+        獲取或創建文字顯示面板。
+
+        參數:
+        mode (str): 模式。
+
+        回傳:
+        TextDisplayPanel: 文字顯示面板實例。
+        """
         if mode not in self.text_display_panels:
             display_panel = self.get_text_display_panel(self.config["display_text"][mode])
             self.display_panel.addToLayout(display_panel)
@@ -134,7 +167,12 @@ class MainInterface(QWidget):
         return self.text_display_panels[mode]
         
     def set_terminal(self, terminal_settings):
-        # 設置終端
+        """
+        設置終端。
+
+        參數:
+        terminal_settings (dict): 終端配置。
+        """
         if self.terminal_panel is None:
             print(f"{self.terminal_panel} is None")
             return
@@ -153,26 +191,58 @@ class MainInterface(QWidget):
         self.terminal_panel.clearAndAddWidget(self.terminal_widget)
 
     def set_terminal_message(self, sender, message):
-        # 設置終端信息
+        """
+        設置終端信息。
+
+        參數:
+        sender (str): 發送者。
+        message (str): 消息內容。
+        """
         if self.terminal_widget is None:
             print(f"{self.terminal_widget} is None")
             return
         self.terminal_widget.post_message(sender, message)
     
     def show_error(self, errorDialog_settings, title, message):
+        """
+        顯示錯誤信息。
+
+        參數:
+        errorDialog_settings (dict): 錯誤對話框設置。
+        title (str): 錯誤標題。
+        message (str): 錯誤信息。
+        """
         background_color = errorDialog_settings["background_color"]
         error_dialog = w.ErrorDialog(self, title=title, message=message, background_color=background_color)
         error_dialog.exec_()  # Show the dialog modally
 
     @pyqtSlot(dict)
     def handle_error_signal(self, error_data):
+        """
+        處理錯誤訊號。
+
+        參數:
+        error_data (dict): 錯誤數據。
+        """
         self.show_error(self.config['error_dialog'], error_data["title"], error_data["message"])
 
     @pyqtSlot(dict)
     def handle_terminal_print_signal(self, print_data):
+        """
+        處理終端輸出訊號。
+
+        參數:
+        print_data (dict): 終端輸出數據。
+        """
         self.set_terminal_message(print_data["owner"], print_data["message"])
     
     def set_sider_bar(self, mode="Home"):
+        """
+        設置側邊欄。
+
+        參數:
+        mode (str, optional): 模式。預設為 "Home"。
+        """
         if self.sider_bar is None:
             print(f"{self.sider_bar} is None")
             return
@@ -222,7 +292,13 @@ class MainInterface(QWidget):
             self.treeWidget.selectionMode = "multiple"
 
     def set_button_bar(self, bar, buttons_info):
-        # 通用方法設置按鈕欄
+        """
+        通用方法設置按鈕欄。
+
+        參數:
+        bar (QWidget): 按鈕欄的父小部件。
+        buttons_info (list): 按鈕信息列表。
+        """
         if bar is None:
             print(f"{bar} is None")
             return
@@ -240,14 +316,33 @@ class MainInterface(QWidget):
             bar.addToLayout(button_widget)
 
     def set_activity_bar(self, activity_bar_buttons):
-        # 設置活動欄
+        """
+        設置活動欄。
+
+        參數:
+        activity_bar_buttons (list): 活動欄按鈕信息列表。
+        """
         self.set_button_bar(self.activity_bar, activity_bar_buttons)
 
     def set_start_bar(self, start_bar_buttons):
+        """
+        設置啟動欄。
+
+        參數:
+        start_bar_buttons (list): 啟動欄按鈕信息列表。
+        """
         self.set_button_bar(self.start_bar, start_bar_buttons)
 
     def get_text_display_panel(self, display_panel_text):
-        # 獲取TextDisplayPanel實例
+        """
+        獲取 TextDisplayPanel 實例。
+
+        參數:
+        display_panel_text (dict): 顯示面板的文本信息。
+
+        回傳:
+        TextDisplayPanel: 文字顯示面板實例。
+        """
         return w.TextDisplayPanel(
             title=display_panel_text['title'],
             content=display_panel_text['content'],
@@ -258,6 +353,12 @@ class MainInterface(QWidget):
         )
 
     def set_text_display_panel(self, mode):
+        """
+        設置文字顯示面板。
+
+        參數:
+        mode (str): 模式。
+        """
         if self.display_panel is None:
             print("display_panel is None")
             return
@@ -272,6 +373,9 @@ class MainInterface(QWidget):
         text_display_panel.setVisible(True)
 
     def set_images_display_panel(self):
+        """
+        設置圖像顯示面板。
+        """
         if self.display_panel is None:
             print("display_panel is None")
             return
@@ -282,6 +386,12 @@ class MainInterface(QWidget):
         self.images_display_panel.setVisible(True)
 
     def get_treeWidget_selected(self):
+        """
+        獲取樹狀小部件中選中的項目。
+
+        回傳:
+        dict: 當前模式選中的項目。
+        """
         all_items = self.treeWidget.get_treeWidget_selected()
         if all_items is None:
             return {}
@@ -291,6 +401,15 @@ class MainInterface(QWidget):
         return current_mode_items
 
     def get_current_mode_items(self, all_items):
+        """
+        獲取當前模式的選中項目。
+
+        參數:
+        all_items (dict): 所有選中項目。
+
+        回傳:
+        dict: 當前模式的選中項目。
+        """
         current_mode_items = {}
         
         current_mode = self.current_mode
@@ -310,12 +429,21 @@ class MainInterface(QWidget):
         
 
     def create_detail_panel(self, mode, selected_items):
-        # 创建详细设置面板
+        """
+        創建詳細設置面板。
+
+        參數:
+        mode (str): 模式。
+        selected_items (dict): 選中的項目。
+
+        回傳:
+        tuple: (是否成功, 選中的路徑, Realsense 選擇)
+        """
         print(f"Create detail panel for {mode} mode with selected items: {selected_items}")
 
         dialog = None
         if mode == "Record":
-            #如果selected_items裡面，Playback rosbag的Value為True，則顯示錯誤信息
+            # 如果 selected_items 裡面，Playback rosbag 的 Value 為 True，則顯示錯誤信息
             if selected_items["Playback rosbag"]:
                 dialog = w.ConfirmDialog("Confirmation", selected_items, callback=self.callback, select_type="folder", enable_realsense_check=False, parent=self)
             else:
@@ -332,7 +460,12 @@ class MainInterface(QWidget):
         return False, None, None
 
     def callback(self, info):
-        # 按鈕的回調函數
+        """
+        按鈕的回調函數。
+
+        參數:
+        info (dict): 按鈕信息。
+        """
         print(f"Button name: {info['name']}, Owner: {info['owner']}")
 
         owner = info["owner"]
@@ -352,9 +485,21 @@ class MainInterface(QWidget):
             return self.handel_confirm_dialog_callback(name, data)
 
     def get_gui_callback(self):
+        """
+        獲取 GUI 回調函數。
+
+        回傳:
+        callable: 回調函數。
+        """
         return self.recive_form_view
 
     def handle_activity_bar_callback(self, name):
+        """
+        處理活動欄的回調。
+
+        參數:
+        name (str): 按鈕名稱。
+        """
         self.set_terminal_message("activity_bar", f"{name} button clicked.")
         self.set_sider_bar(mode=name)
         self.set_start_bar(self.config['buttons']['start_bar'][name])
@@ -365,9 +510,21 @@ class MainInterface(QWidget):
         self.current_mode = name
 
     def handle_configurable_tree_callback(self, name):
+        """
+        處理配置樹的回調。
+
+        參數:
+        name (str): 按鈕名稱。
+        """
         self.set_text_display_panel(name)
 
     def handle_start_bar_callback(self, name):
+        """
+        處理啟動欄的回調。
+
+        參數:
+        name (str): 按鈕名稱。
+        """
         self.set_terminal_message("start_bar", f"{name} button clicked.")
 
         if name == "start":
@@ -378,6 +535,9 @@ class MainInterface(QWidget):
             self.handle_record_button()
 
     def handle_start_button(self):
+        """
+        處理開始按鈕。
+        """
         if not self.activated:
             selected_items_dict = self.get_treeWidget_selected()
 
@@ -405,20 +565,35 @@ class MainInterface(QWidget):
             self.show_error(self.config['error_dialog'], "Error", "The system is already running.")
 
     def handle_stop_button(self):
+        """
+        處理停止按鈕。
+        """
         if self.activated:
             self.set_terminal_message("start_bar", "Stop the system.")
             self.send_to_view("stop_record")
             self.activated = False
     
     def handle_record_button(self):
+        """
+        處理錄製按鈕。
+        """
         if self.activated:
             self.set_terminal_message("start_bar", "Start record")
             self.send_to_view("start_record")
 
     def check_selected_items(self, selected_items_dict):
+        """
+        檢查選中的項目。
+
+        參數:
+        selected_items_dict (dict): 選中的項目。
+
+        回傳:
+        bool: 如果選中的項目包含必選項則為 True，否則為 False。
+        """
         required_item = self.config["sidebar"]["settings"][self.current_mode]["Required"]["name"]
         
-        #如果selected_items_dict裡面key為required_item的value皆為False，則顯示錯誤信息
+        # 如果 selected_items_dict 裡面 key 為 required_item 的 value 皆為 False，則顯示錯誤信息
         if all([selected_items_dict[key] == False for key in required_item]):
             self.set_terminal_message("start_bar", "ERROR! Required items are not selected.")
             self.show_error(self.config['error_dialog'], "Error", "Required items are not selected.")
@@ -427,6 +602,16 @@ class MainInterface(QWidget):
         return True
     
     def handel_confirm_dialog_callback(self, name, data):
+        """
+        處理確認對話框的回調。
+
+        參數:
+        name (str): 按鈕名稱。
+        data (dict): 附加數據。
+
+        回傳:
+        任何: 取決於回調函數的返回值。
+        """
         if name == "check_realsense":
             return self.send_to_view("get_realsense_profiles")
         elif name == "check_dir":
@@ -434,7 +619,17 @@ class MainInterface(QWidget):
         elif name == "check_file":
             return self.send_to_view("check_file", data=data)
 
-    def send_to_view(self, mode, selected_items_dict = None, realsense_selection=None, selected_path=None, data=None):
+    def send_to_view(self, mode, selected_items_dict=None, realsense_selection=None, selected_path=None, data=None):
+        """
+        發送消息到視圖。
+
+        參數:
+        mode (str): 模式。
+        selected_items_dict (dict, optional): 選中的項目。預設為 None。
+        realsense_selection (任何, optional): Realsense 選擇。預設為 None。
+        selected_path (str, optional): 選中的路徑。預設為 None。
+        data (任何, optional): 附加數據。預設為 None。
+        """
         if self.callback_to_view is None:
             print("No callback function is set.")
             return
@@ -469,6 +664,13 @@ class MainInterface(QWidget):
             self.callback_to_view("start_record")
 
     def recive_form_view(self, mode, data):
+        """
+        從視圖接收消息。
+
+        參數:
+        mode (str): 模式。
+        data (dict): 附加數據。
+        """
         if mode == "record_imgs":
             self.update_image_display_panel(data['depth_image'], data['color_image'])
         elif mode == "show_error":
@@ -477,17 +679,34 @@ class MainInterface(QWidget):
             self.terminal_print_signal.emit({"owner": data["owner"], "message": data["message"]})
 
     def update_image_display_panel(self, image1_array, image2_array):
+        """
+        更新圖像顯示面板。
+
+        參數:
+        image1_array (np.ndarray): 圖像 1 數據。
+        image2_array (np.ndarray): 圖像 2 數據。
+        """
         if self.images_display_panel is not None:
             self.images_display_panel.update_images(image1_array, image2_array)
         else:
             print("Images display panel is None")
 
     def sizeHint(self):
-        # 設置視窗大小
+        """
+        設置視窗大小。
+
+        回傳:
+        QSize: 視窗大小。
+        """
         return QSize(1200, 800)
     
     def setZeroMarginsAndSpacing(self, layout):
-        # 設置佈局的邊距和間距
+        """
+        設置佈局的邊距和間距為 0。
+
+        參數:
+        layout (QVBoxLayout): 佈局實例。
+        """
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
