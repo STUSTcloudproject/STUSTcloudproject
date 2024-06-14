@@ -2,7 +2,8 @@
 
 ## 簡介
 
-此項目旨在提供一個基於 RealSense 的數據處理系統，包括數據錄製、數據處理和數據視圖顯示功能。系統使用 MVC 架構進行設計和實現，並提供了豐富的自定義小部件以提升用戶體驗。
+此項目旨在提供一個基於 RealSense 的數據處理系統，包括數據錄製、數據處理和數據視圖顯示功能。<br>
+數據錄製部分基於pyrealsense2，數據處理基於open3d，介面框架PyQt5。
 
 ## 目錄
 
@@ -15,37 +16,39 @@
 ### 前置條件
 
 請確保已安裝以下軟件：
-- Python 3.10
+- Python 3.10 <span style="color: rgba(255, 0, 0, 0.90); font-style: italic;">限定使用3.10</span>
 - pip
 
 ### 安裝步驟
 
 1. 克隆此存儲庫到本地：
     ```bash
-    git clone https://github.com/STUSTcloudproject/O3d_gui
+    git clone https://github.com/STUSTcloudproject/MVC_gui.git
     ```
 
 2. 進入項目目錄並安裝所需依賴：
     ```bash
-    cd your_repository
+    cd MVC_gui
     pip install -r requirements.txt
     ```
 
-3. 配置項目：
-    - 編輯 `config.json` 和 `realsense.json` 文件以適應你的需求
-
 ## 使用說明
 
-1. 運行主程序：
+1. 進入 `src` 資料夾：
+    ```bash
+    cd src
+    ```
+    
+2. 運行主程序：
     ```bash
     python main.py
     ```
 
-2. 使用 GUI 進行操作：
+3. 使用 GUI 進行操作：
     - `Home`：查看應用說明
-    - `Record`：錄製各種類型的數據，包括圖像和 .bag 文件
-    - `RunSystem`：進行點雲數據處理
-    - `View`：查看錄製和處理的點雲數據
+    - `Record`：錄製各種類型的數據，包括圖像和 .bag 文件與 .bag 文件回放
+    - `RunSystem`：進行點雲數據處理，輸出 mesh 網格
+    - `View`：查看各式模型，包括點雲數據、mesh網格等
 
 ## 詳細文檔
 
