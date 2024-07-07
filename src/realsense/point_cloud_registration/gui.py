@@ -10,7 +10,7 @@ import os
 isMacOS = (platform.system() == "Darwin")
 
 class AppWindow:
-    MENU_OPEN = 1
+    MENU_OPEN = 1   
     MENU_EXPORT = 2
     MENU_QUIT = 3
     MENU_SHOW_SETTINGS = 11
@@ -393,7 +393,7 @@ class AppWindow:
                 self.point_clouds.append(pcd)
             
             self.point_cloud_loaded = True
-            self._scene.setup_camera(5.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
+            self._scene.setup_camera(60.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
             self._update_status_panel()
             print("Point cloud loaded successfully")
 
@@ -506,7 +506,7 @@ class AppWindow:
             new_target = self.point_clouds[self.current_target_idx]
             self._scene.scene.add_geometry("Target", new_target, self.material)
 
-        self._scene.setup_camera(5.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
+        self._scene.setup_camera(60.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
         self._update_status_panel()
         print(f"Switched to source {self.current_source_idx}")
 
@@ -539,7 +539,7 @@ class AppWindow:
         self._scene.scene.remove_geometry("Target")
         self._scene.scene.add_geometry("Target", new_target, self.material)
         self._scene.scene.add_geometry("Source", new_source, self.material)
-        self._scene.setup_camera(5.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
+        self._scene.setup_camera(60.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
         self._update_status_panel()
         print(f"Switched target to {self.current_target_idx} and source to {self.current_source_idx}")
 
@@ -687,7 +687,7 @@ class AppWindow:
 
         self._scene.scene.clear_geometry()
         self._scene.scene.add_geometry("Merged", merged_pcd, self.material)
-        self._scene.setup_camera(5.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
+        self._scene.setup_camera(60.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
         self.merged = True
         self.undo_stack.clear()
         self.redo_stack.clear()
