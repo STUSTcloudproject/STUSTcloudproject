@@ -428,11 +428,18 @@ class AppWindow:
                     self._pc_color.color_value.blue,
                     self._pc_color.color_value.alpha,
                 ]
-            self._scene.scene.remove_geometry("Source")
-            self._scene.scene.remove_geometry("Target")
-            self._scene.scene.add_geometry("Source", self.point_clouds[self.current_source_idx], self.material)
-            self._scene.scene.add_geometry("Target", self.point_clouds[self.current_target_idx], self.material)
+
+            if self.current_source_idx < len(self.point_clouds):
+                self._scene.scene.remove_geometry("Source")
+                self._scene.scene.add_geometry("Source", self.point_clouds[self.current_source_idx], self.material)
+
+            if self.current_target_idx < len(self.point_clouds):
+                self._scene.scene.remove_geometry("Target")
+                self._scene.scene.add_geometry("Target", self.point_clouds[self.current_target_idx], self.material)
+
+            self._scene.force_redraw()
             print("Point cloud color updated")
+
 
     def _show_warning_dialog(self, message):
         """
