@@ -37,16 +37,25 @@ def resize_bounding_box(bounding_box, scale, axis):
 
 def remove_points_within_bounding_box(pcd, bounding_box):
     indices = bounding_box.get_point_indices_within_bounding_box(pcd.points)
+    if len(indices) == 0:
+        print("No points within the bounding box.")
+        return
     mask = np.ones(len(pcd.points), dtype=bool)
     mask[indices] = False
     pcd.points = o3d.utility.Vector3dVector(np.asarray(pcd.points)[mask])
-    pcd.colors = o3d.utility.Vector3dVector(np.asarray(pcd.colors)[mask])
+    if pcd.has_colors():
+        pcd.colors = o3d.utility.Vector3dVector(np.asarray(pcd.colors)[mask])
+    if pcd.has_normals():
+        pcd.normals = o3d.utility.Vector3dVector(np.asarray(pcd.normals)[mask])
 
 def keep_points_within_bounding_box(pcd, bounding_box):
     """只保留边界框内的点云。"""
     indices = bounding_box.get_point_indices_within_bounding_box(pcd.points)
     pcd.points = o3d.utility.Vector3dVector(np.asarray(pcd.points)[indices])
-    pcd.colors = o3d.utility.Vector3dVector(np.asarray(pcd.colors)[indices])
+    if pcd.has_colors():
+        pcd.colors = o3d.utility.Vector3dVector(np.asarray(pcd.colors)[indices])
+    if pcd.has_normals():
+        pcd.normals = o3d.utility.Vector3dVector(np.asarray(pcd.normals)[indices])
 
 class UndoRedoManager:
     def __init__(self):
@@ -207,9 +216,8 @@ def main(point_cloud_file=None):
     vis.destroy_window()
 
 if __name__ == "__main__":
-    import sys
+    import sys  
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:
-        main()
-
+        main("bun000.ply")
