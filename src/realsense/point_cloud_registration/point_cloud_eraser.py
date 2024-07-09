@@ -42,6 +42,7 @@ class AppWindow:
     MENU_OPEN = 1
     MENU_QUIT = 3
     MENU_SHOW_SETTINGS = 11
+    MENU_SHOW_POINT_CLOUD_CONTROLS = 12
     MENU_ABOUT = 21
 
     def __init__(self, width, height):
@@ -67,8 +68,8 @@ class AppWindow:
         self._scene.set_on_mouse(self._on_mouse_event)
 
         self.view_ctrls.visible = True
+        self.point_cloud_ctrls.visible = True
         self._settings_panel.visible = True
-
         gui.Application.instance.menubar.set_checked(AppWindow.MENU_SHOW_SETTINGS, self.view_ctrls.visible)
 
         self.generate_random_point_cloud()
@@ -90,6 +91,7 @@ class AppWindow:
                 file_menu.add_item("Quit", AppWindow.MENU_QUIT)
             settings_menu = gui.Menu()
             settings_menu.add_item("View Controls", AppWindow.MENU_SHOW_SETTINGS)
+            settings_menu.add_item("Point Cloud Controls", AppWindow.MENU_SHOW_POINT_CLOUD_CONTROLS)
             help_menu = gui.Menu()
             help_menu.add_item("About", AppWindow.MENU_ABOUT)
 
@@ -107,7 +109,11 @@ class AppWindow:
         self.window.set_on_menu_item_activated(AppWindow.MENU_OPEN, self._on_menu_open)
         self.window.set_on_menu_item_activated(AppWindow.MENU_QUIT, self._on_menu_quit)
         self.window.set_on_menu_item_activated(AppWindow.MENU_SHOW_SETTINGS, self._on_menu_toggle_view_controls)
+        self.window.set_on_menu_item_activated(AppWindow.MENU_SHOW_POINT_CLOUD_CONTROLS, self._on_menu_toggle_point_cloud_controls)
         self.window.set_on_menu_item_activated(AppWindow.MENU_ABOUT, self._on_menu_about)
+
+        gui.Application.instance.menubar.set_checked(AppWindow.MENU_SHOW_SETTINGS, True)
+        gui.Application.instance.menubar.set_checked(AppWindow.MENU_SHOW_POINT_CLOUD_CONTROLS, True)
 
     def _setup_settings_panel(self):
         em = self.window.theme.font_size
@@ -117,10 +123,11 @@ class AppWindow:
         self.view_ctrls = gui.CollapsableVert("View controls", 0.25 * em, gui.Margins(em, 0, 0, 0))
         self._setup_view_controls()
         self._settings_panel.add_child(self.view_ctrls)
+        
 
-        self.erase_ctrls = gui.CollapsableVert("Eraser controls", 0.25 * em, gui.Margins(em, 0, 0, 0))
-        self._setup_erase_controls()
-        self._settings_panel.add_child(self.erase_ctrls)
+        self.point_cloud_ctrls = gui.CollapsableVert("Point Cloud Controls", 0.25 * em, gui.Margins(em, 0, 0, 0))
+        self._setup_point_cloud_controls()
+        self._settings_panel.add_child(self.point_cloud_ctrls)
 
         self.window.add_child(self._settings_panel)
 
@@ -136,13 +143,16 @@ class AppWindow:
 
         self.view_ctrls.add_child(grid)
 
-    def _setup_erase_controls(self):
+    def _setup_point_cloud_controls(self):
         em = self.window.theme.font_size
         vgrid = gui.VGrid(2, 0.25 * em)
         
         self._erase_mode_checkbox = gui.Checkbox("Eraser mode")
         self._erase_mode_checkbox.set_on_checked(self._on_erase_mode_changed)
         vgrid.add_child(self._erase_mode_checkbox)
+
+        # Add an empty label or space for new line
+        vgrid.add_child(gui.Label(""))
 
         vgrid.add_child(gui.Label("Eraser size"))
         self._erase_size_slider = gui.Slider(gui.Slider.DOUBLE)
@@ -151,7 +161,8 @@ class AppWindow:
         self._erase_size_slider.set_on_value_changed(self._on_erase_size_changed)
         vgrid.add_child(self._erase_size_slider)
 
-        self.erase_ctrls.add_child(vgrid)
+        self.point_cloud_ctrls.add_child(vgrid)
+
 
     def _on_erase_mode_changed(self, is_checked):
         self.erase_mode = is_checked
@@ -194,10 +205,17 @@ class AppWindow:
         self.view_ctrls.visible = not self.view_ctrls.visible
         self._update_settings_panel_visibility()
 
+    def _on_menu_toggle_point_cloud_controls(self):
+        self.point_cloud_ctrls.visible = not self.point_cloud_ctrls.visible
+        self._update_settings_panel_visibility()
+
     def _update_settings_panel_visibility(self):
-        self._settings_panel.visible = self.view_ctrls.visible
+        any_visible = self.view_ctrls.visible or self.point_cloud_ctrls.visible
+        self._settings_panel.visible = any_visible
         gui.Application.instance.menubar.set_checked(AppWindow.MENU_SHOW_SETTINGS, self.view_ctrls.visible)
+        gui.Application.instance.menubar.set_checked(AppWindow.MENU_SHOW_POINT_CLOUD_CONTROLS, self.point_cloud_ctrls.visible)
         self.window.set_needs_layout()
+
 
     def _on_menu_about(self):
         pass
@@ -206,7 +224,7 @@ class AppWindow:
         self._scene.scene.set_background([color.red, color.green, color.blue, color.alpha])
 
     def generate_random_point_cloud(self):
-        num_points = 1000
+        num_points = 5000
         points = np.random.uniform(-1, 1, size=(num_points, 3))
         self.point_cloud = o3d.geometry.PointCloud()
         self.point_cloud.points = o3d.utility.Vector3dVector(points)
