@@ -293,6 +293,7 @@ class AppWindow:
             self._translation_hbox.visible = False  # 确保隐藏 Translation step
             self._resize_hbox.visible = False  # 确保隐藏 Resize step
             self._hide_bounding_box()  # 确保隐藏边界框
+            self._restore_original_colors()
         else:
             self._scene.set_view_controls(gui.SceneWidget.Controls.ROTATE_CAMERA)
             self._hbox.visible = False  # 隐藏 Eraser size
@@ -312,6 +313,22 @@ class AppWindow:
             self._translation_hbox.visible = False  # 隐藏 Translation step
             self._resize_hbox.visible = False  # 隐藏 Resize step
             self._hide_bounding_box()  # 确保隐藏边界框
+            self._restore_original_colors()
+
+    def _restore_original_colors(self):
+        if not self.point_cloud_loaded or self.original_colors is None:
+            return
+        
+        # 恢复所有点的原始颜色
+        self.point_cloud.colors = o3d.utility.Vector3dVector(self.original_colors)
+
+        # 重新添加点云以更新颜色
+        self._scene.scene.remove_geometry("PointCloud")
+        self._scene.scene.add_geometry("PointCloud", self.point_cloud, self.material)
+        self._scene.force_redraw()
+        self.original_colors = None
+
+        print("Restored original colors")
 
     def _on_erase_size_changed(self, value):
         self.erase_radius = value
@@ -404,8 +421,46 @@ class AppWindow:
                     self._remove_points_inside_bbox()
                 elif event.key == gui.KeyName.P:
                     self._preserve_points_inside_bbox()
+                elif event.key == gui.KeyName.H:  # 添加 H 键的处理
+                    self._highlight_points_inside_bbox()
             elif self.erase_mode:
                 pass  # 在擦除模式下没有按键事件处理
+
+
+    def _highlight_points_inside_bbox(self):
+        if not self.point_cloud_loaded or self.bounding_box is None:
+            return
+
+        print("Highlighting points inside bounding box")
+        points = np.asarray(self.point_cloud.points)
+        o3d_points = o3d.utility.Vector3dVector(points)
+        mask = self.bounding_box.get_point_indices_within_bounding_box(o3d_points)
+        mask_set = set(mask)
+
+        # 确保 self.original_colors 是 numpy 数组
+        if self.original_colors is None:
+            self.original_colors = np.asarray(self.point_cloud.colors).copy()
+        
+        colors = np.asarray(self.point_cloud.colors)  # 确保 colors 是 numpy 数组
+
+        # 恢复所有点的原始颜色
+        colors = self.original_colors.copy()
+
+        # 更新边界框内点的颜色为红色
+        for i in range(len(colors)):
+            if i in mask_set:
+                colors[i] = [1, 0, 0]  # 红色
+
+        self.point_cloud.colors = o3d.utility.Vector3dVector(colors)
+
+        # 重新添加点云以更新颜色
+        self._scene.scene.remove_geometry("PointCloud")
+        self._scene.scene.add_geometry("PointCloud", self.point_cloud, self.material)
+        self._scene.force_redraw()
+
+        print("Points inside bounding box highlighted")
+
+
 
     def _remove_points_inside_bbox(self):
         if not self.point_cloud_loaded or self.bounding_box is None:
@@ -421,9 +476,13 @@ class AppWindow:
 
         self._update_point_cloud(new_points, new_colors)
 
+        self.original_colors = None
+
     def _preserve_points_inside_bbox(self):
         if not self.point_cloud_loaded or self.bounding_box is None:
             return
+
+        self._restore_original_colors()
 
         points = np.asarray(self.point_cloud.points)
         o3d_points = o3d.utility.Vector3dVector(points)
@@ -651,6 +710,8 @@ class AppWindow:
             # 如果边界框模式启用，更新边界框
             if self.bounding_box_mode:
                 self._show_bounding_box()
+
+            self.original_colors = None
 
         except Exception as e:
             self._show_warning_dialog(f"Failed to load point cloud: {e}")
