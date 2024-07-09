@@ -6,6 +6,7 @@ import numpy as np
 import platform
 import threading
 import queue
+import copy
 
 isMacOS = (platform.system() == "Darwin")
 
@@ -72,6 +73,9 @@ class AppWindow:
         self.refresh_view_on_mode_change = True  # 切换模式时刷新视角
 
         self.last_mouse_pos = [0, 0]
+
+        self.undo_stack = []
+        self.redo_stack = []
 
         self._setup_menu_bar()
         self._setup_settings_panel()
@@ -367,6 +371,11 @@ class AppWindow:
         event (gui.KeyEvent): 键盘事件
         """
         if event.type == gui.KeyEvent.Type.DOWN:
+            if event.key == gui.KeyName.Z:
+                self._on_undo()
+            elif event.key == gui.KeyName.Y:
+                self._on_redo()
+
             if not self.bounding_box_mode and not self.erase_mode:
                 if event.key == gui.KeyName.A:
                     self._translate_point_cloud(axis='x', delta=-self.translation_step_pc)
@@ -406,9 +415,9 @@ class AppWindow:
                 elif event.key == gui.KeyName.E:
                     self._translate_bounding_box(axis='z', delta=-self.translation_step_bbox)
                 elif event.key == gui.KeyName.J:
-                    self._resize_bounding_box(axis='x', delta=-self.resize_step_bbox)
-                elif event.key == gui.KeyName.L:
                     self._resize_bounding_box(axis='x', delta=self.resize_step_bbox)
+                elif event.key == gui.KeyName.L:
+                    self._resize_bounding_box(axis='x', delta=-self.resize_step_bbox)
                 elif event.key == gui.KeyName.I:
                     self._resize_bounding_box(axis='y', delta=self.resize_step_bbox)
                 elif event.key == gui.KeyName.K:
@@ -425,7 +434,6 @@ class AppWindow:
                     self._highlight_points_inside_bbox()
             elif self.erase_mode:
                 pass  # 在擦除模式下没有按键事件处理
-
 
     def _highlight_points_inside_bbox(self):
         if not self.point_cloud_loaded or self.bounding_box is None:
@@ -460,11 +468,14 @@ class AppWindow:
 
         print("Points inside bounding box highlighted")
 
-
-
     def _remove_points_inside_bbox(self):
         if not self.point_cloud_loaded or self.bounding_box is None:
             return
+
+        self._restore_original_colors()
+
+        # 保存当前状态
+        self._save_current_state()
 
         points = np.asarray(self.point_cloud.points)
         o3d_points = o3d.utility.Vector3dVector(points)
@@ -484,6 +495,10 @@ class AppWindow:
 
         self._restore_original_colors()
 
+        # 保存当前状态
+        self._save_current_state()
+
+
         points = np.asarray(self.point_cloud.points)
         o3d_points = o3d.utility.Vector3dVector(points)
         mask = self.bounding_box.get_point_indices_within_bounding_box(o3d_points)
@@ -494,10 +509,11 @@ class AppWindow:
         self._update_point_cloud(new_points, new_colors)
 
 
-
     def _translate_point_cloud(self, axis, delta):
         if not self.point_cloud_loaded:
             return
+
+        self._save_current_state()
 
         points = np.asarray(self.point_cloud.points)
 
@@ -516,6 +532,8 @@ class AppWindow:
     def _rotate_point_cloud(self, axis, delta):
         if not self.point_cloud_loaded:
             return
+
+        self._save_current_state()
 
         points = np.asarray(self.point_cloud.points)
         centroid = np.mean(points, axis=0)
@@ -742,17 +760,18 @@ class AppWindow:
         dlg.add_child(dlg_layout)
         self.window.show_dialog(dlg)
 
-
     def _on_mouse_event(self, event):
         if self.erase_mode:
             if event.type == gui.MouseEvent.Type.BUTTON_DOWN and event.is_button_down(gui.MouseButton.LEFT):
                 self.is_erasing = True
                 self.last_mouse_pos = [event.x, event.y]
+                self._save_current_state()  # 在按下左键时保存初始状态
                 self._erase_points(event.x, event.y)
                 return gui.SceneWidget.EventCallbackResult.CONSUMED
 
             if event.type == gui.MouseEvent.Type.BUTTON_UP and not event.is_button_down(gui.MouseButton.LEFT):
                 self.is_erasing = False
+                self._save_current_state()  # 在释放左键时保存最终状态
                 return gui.SceneWidget.EventCallbackResult.CONSUMED
 
             if event.type == gui.MouseEvent.Type.DRAG and self.is_erasing:
@@ -815,6 +834,46 @@ class AppWindow:
         self.point_cloud.colors = o3d.utility.Vector3dVector(new_colors)
         if self._scene.scene.has_geometry("PointCloud"):
             self._scene.scene.remove_geometry("PointCloud")
+        self._scene.scene.add_geometry("PointCloud", self.point_cloud, self.material)
+        self._scene.force_redraw()
+
+    def _save_current_state(self):
+        """
+        保存当前点云状态到undo栈
+        """
+        self.undo_stack.append(copy.deepcopy(self.point_cloud))
+        self.redo_stack.clear()  # 清空redo栈
+        print("Saved current state")
+
+    def _on_undo(self):
+        """
+        撤销操作
+        """
+        if not self.undo_stack:
+            self._show_warning_dialog("No actions to undo.")
+            return
+
+        self.redo_stack.append(copy.deepcopy(self.point_cloud))
+        last_state = self.undo_stack.pop()
+        self.point_cloud = last_state
+
+        self._scene.scene.remove_geometry("PointCloud")
+        self._scene.scene.add_geometry("PointCloud", self.point_cloud, self.material)
+        self._scene.force_redraw()
+
+    def _on_redo(self):
+        """
+        重做操作
+        """
+        if not self.redo_stack:
+            self._show_warning_dialog("No actions to redo.")
+            return
+        
+        self.undo_stack.append(copy.deepcopy(self.point_cloud))
+        next_state = self.redo_stack.pop()
+        self.point_cloud = next_state
+
+        self._scene.scene.remove_geometry("PointCloud")
         self._scene.scene.add_geometry("PointCloud", self.point_cloud, self.material)
         self._scene.force_redraw()
 
