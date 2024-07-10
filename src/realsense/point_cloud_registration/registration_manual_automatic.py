@@ -225,6 +225,14 @@ class AppWindow:
         self._btn_merge.set_on_clicked(self._merge_point_clouds)
         self.function1_ctrls.add_child(self._btn_merge)
 
+        self._btn_cancel_merge = gui.Button("Cancel Merge (P)")
+        self._btn_cancel_merge.set_on_clicked(self._cancel_merge)
+        self.function1_ctrls.add_child(self._btn_cancel_merge)
+
+        self._btn_export_merged_point_cloud = gui.Button("Export Merged Point Cloud (X)")
+        self._btn_export_merged_point_cloud.set_on_clicked(self._export_merged_point_cloud)
+        self.function1_ctrls.add_child(self._btn_export_merged_point_cloud)
+
     def _setup_translation_rotation_sliders(self):
         """
         設置平移和旋轉步長滑動條
@@ -314,10 +322,6 @@ class AppWindow:
 
         self._scene.force_redraw()
         print("Point cloud colors updated")
-
-
-
-
 
 
     def _on_layout(self, layout_context):
@@ -928,6 +932,8 @@ class AppWindow:
         last_state = self.undo_stack.pop()  # 獲取上一個狀態
         self.point_clouds[self.current_source_idx] = last_state
 
+        self._update_point_cloud_colors()
+
         self._scene.scene.remove_geometry("Source")
         self._scene.scene.add_geometry("Source", self.point_clouds[self.current_source_idx], self.material)
         self._scene.force_redraw()
@@ -948,6 +954,8 @@ class AppWindow:
         self.undo_stack.append(copy.deepcopy(self.point_clouds[self.current_source_idx]))  # 保存當前狀態
         next_state = self.redo_stack.pop()  # 獲取下一個狀態
         self.point_clouds[self.current_source_idx] = next_state
+        
+        self._update_point_cloud_colors()
 
         self._scene.scene.remove_geometry("Source")
         self._scene.scene.add_geometry("Source", self.point_clouds[self.current_source_idx], self.material)
