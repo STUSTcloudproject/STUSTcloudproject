@@ -396,6 +396,8 @@ class AppWindow:
             elif event.key == gui.KeyName.G:
                 # 切换边界框模式
                 self._on_mode_changed("bounding_box", not self.bounding_box_mode)
+            elif event.key == gui.KeyName.X:
+                self._export_current_point_cloud()
 
             if not self.bounding_box_mode and not self.erase_mode:
                 if event.key == gui.KeyName.A:
@@ -455,6 +457,38 @@ class AppWindow:
                     self._highlight_points_inside_bbox()
             elif self.erase_mode:
                 pass  # 在擦除模式下没有按键事件处理
+
+    def _export_current_point_cloud(self):
+        """
+        导出当前点云
+        """
+        if not self.point_cloud_loaded:
+            self._show_warning_dialog("No point cloud available for export.")
+            return
+        
+        dlg = gui.FileDialog(gui.FileDialog.SAVE, "Choose file to save", self.window.theme)
+        dlg.add_filter(".ply", "PLY files (.ply)")
+        dlg.set_on_cancel(self._on_file_dialog_cancel)
+        dlg.set_on_done(self._on_save_dialog_done)
+        self.window.show_dialog(dlg)
+
+    def _on_save_dialog_done(self, filename):
+        """
+        完成文件保存选择时触发
+        参数:
+        filename (str): 选择的文件名
+        """
+        self.window.close_dialog()
+        if not self.point_cloud_loaded:
+            self._show_warning_dialog("No point cloud available for export.")
+            return
+        
+        try:
+            o3d.io.write_point_cloud(filename, self.point_cloud)
+            print(f"Point cloud exported as {filename}")
+        except Exception as e:
+            self._show_warning_dialog(f"Failed to export point cloud: {e}")
+            
 
     def _highlight_points_inside_bbox(self):
         if not self.point_cloud_loaded or self.bounding_box is None:
