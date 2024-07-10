@@ -165,8 +165,17 @@ class AppWindow:
         self._refresh_view_checkbox.set_on_checked(self._on_refresh_view_checked)
         grid2.add_child(self._refresh_view_checkbox)
 
+        grid3 = gui.VGrid(2, 0.25 * em)
+        self._button = gui.Button("Refresh view ( V )")
+        self._button.set_on_clicked(self._refresh_view)
+        grid2.add_child(self._button)
+
         self.view_ctrls.add_child(grid1)
         self.view_ctrls.add_child(grid2)
+        self.view_ctrls.add_child(grid3)
+
+    def _refresh_view(self):
+        self._scene.setup_camera(60.0, self.point_cloud.get_axis_aligned_bounding_box(), self.point_cloud.get_center())
 
     def _on_refresh_view_checked(self, is_checked):
         self.refresh_view_on_mode_change = is_checked
@@ -175,14 +184,14 @@ class AppWindow:
         em = self.window.theme.font_size
         vert = gui.Vert(0.25 * em)  # 使用 gui.Vert 代替 gui.VGrid
 
-        self._erase_mode_checkbox = gui.Checkbox("Eraser mode")
+        self._erase_mode_checkbox = gui.Checkbox("Eraser mode ( F )")
         self._erase_mode_checkbox.set_on_checked(
             lambda is_checked: self._on_mode_changed("erase", is_checked)
         )
         vert.add_child(self._erase_mode_checkbox)
 
         # Create Bounding Box mode checkbox
-        self._bounding_box_mode_checkbox = gui.Checkbox("Bounding Box Mode")
+        self._bounding_box_mode_checkbox = gui.Checkbox("Bounding Box Mode ( G )")
         self._bounding_box_mode_checkbox.set_on_checked(
             lambda is_checked: self._on_mode_changed("bounding_box", is_checked)
         )
@@ -267,10 +276,14 @@ class AppWindow:
 
     def _on_mode_changed(self, mode, is_checked):
         if mode == "erase":
+            self._erase_mode_checkbox.checked = is_checked
+            self.erase_mode = is_checked
             self._toggle_erase_mode(is_checked)
         elif mode == "bounding_box":
+            self._bounding_box_mode_checkbox.checked = is_checked
+            self.bounding_box_mode = is_checked
             self._toggle_bounding_box_mode(is_checked)
-        
+            
         # Force layout update
         self.window.set_needs_layout()
 
@@ -375,6 +388,14 @@ class AppWindow:
                 self._on_undo()
             elif event.key == gui.KeyName.Y:
                 self._on_redo()
+            elif event.key == gui.KeyName.V:
+                self._refresh_view()
+            if event.key == gui.KeyName.F:
+                # 切换 Eraser 模式
+                self._on_mode_changed("erase", not self.erase_mode)
+            elif event.key == gui.KeyName.G:
+                # 切换边界框模式
+                self._on_mode_changed("bounding_box", not self.bounding_box_mode)
 
             if not self.bounding_box_mode and not self.erase_mode:
                 if event.key == gui.KeyName.A:
