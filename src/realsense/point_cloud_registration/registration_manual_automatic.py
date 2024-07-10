@@ -51,6 +51,9 @@ class AppWindow:
         self.undo_stack = []
         self.redo_stack = []
 
+        self.point_cloud_colors = []
+        self.show_original_colors = False
+
         # 合併標誌
         self.merged = False
 
@@ -243,9 +246,6 @@ class AppWindow:
         self.function1_ctrls.add_child(self._rotation_step_slider)
 
     def _setup_status_panel(self):
-        """
-        設置狀態面板
-        """
         em = self.window.theme.font_size
         self.status_panel = gui.Vert(0.25 * em, gui.Margins(em, 0, 0, 0))
 
@@ -265,7 +265,60 @@ class AppWindow:
         self._chk_target_visible.set_on_checked(self._on_toggle_target_visibility)
         self.status_panel.add_child(self._chk_target_visible)
 
+        self._chk_show_original_colors = gui.Checkbox("Show Original Colors")
+        self._chk_show_original_colors.checked = self.show_original_colors
+        self._chk_show_original_colors.set_on_checked(self._on_toggle_show_original_colors)
+        self.status_panel.add_child(self._chk_show_original_colors)
+
         self.window.add_child(self.status_panel)
+
+    def _on_toggle_show_original_colors(self, is_checked):
+        self.show_original_colors = is_checked
+        self._update_point_cloud_colors()
+
+    def _update_point_cloud_colors(self):
+        print("Updating point cloud colors...")
+        
+        for idx, pcd in enumerate(self.point_clouds):
+            if self.show_original_colors:
+                print(f"Applying original colors to point cloud {idx}")
+                original_colors = self.point_cloud_colors[idx]
+                print(f"Original colors for point cloud {idx}: {original_colors[:5]}")  # 打印前5個顏色作為示例
+                pcd.colors = o3d.utility.Vector3dVector(original_colors)
+            else:
+                if idx == self.current_target_idx:
+                    print(f"Applying gray color to point cloud {idx}")
+                    pcd.paint_uniform_color([0.5, 0.5, 0.5])  # 灰色
+                else:
+                    print(f"Applying blue color to point cloud {idx}")
+                    pcd.paint_uniform_color([0, 0, 1])  # 藍色
+
+        # 如果在合併模式下，需要重新合併所有點雲到 merged_pcd
+        if self.merged:
+            self.merged_pcd = o3d.geometry.PointCloud()
+            for pcd in self.point_clouds:
+                self.merged_pcd += pcd
+            self._scene.scene.clear_geometry()
+            self._scene.scene.add_geometry("Merged", self.merged_pcd, self.material)
+        else:
+            # 非合併模式下，分別更新 Source 和 Target
+            if self.current_source_idx < len(self.point_clouds):
+                source_pcd = self.point_clouds[self.current_source_idx]
+                self._scene.scene.remove_geometry("Source")
+                self._scene.scene.add_geometry("Source", source_pcd, self.material)
+
+            if self.current_target_idx < len(self.point_clouds):
+                target_pcd = self.point_clouds[self.current_target_idx]
+                self._scene.scene.remove_geometry("Target")
+                self._scene.scene.add_geometry("Target", target_pcd, self.material)
+
+        self._scene.force_redraw()
+        print("Point cloud colors updated")
+
+
+
+
+
 
     def _on_layout(self, layout_context):
         """
@@ -468,27 +521,34 @@ class AppWindow:
         self.window.show_dialog(dlg)
 
     def load(self, path):
-        """
-        加載點雲文件
-        參數:
-        path (str): 文件路徑
-        """
         try:
             pcd = o3d.io.read_point_cloud(path)
             if not pcd.has_points():
                 print(f"Failed to load point cloud from {path}. Exiting.")
                 return
             
+            # 保存原始顏色，如果沒有則設置為灰色
+            if pcd.has_colors():
+                print("Point cloud has colors")
+                colors = np.asarray(pcd.colors)
+                print(f"Loaded colors: {colors[:5]}")  # 打印前5個顏色作為示例
+                self.point_cloud_colors.append(colors.copy())  # 保存颜色的副本
+            else:
+                print("Point cloud does not have colors")
+                self.point_cloud_colors.append(np.full((len(pcd.points), 3), [0.5, 0.5, 0.5]))
+
             is_first_load = len(self.point_clouds) == 0
 
             if is_first_load:
                 self.point_clouds.append(pcd)
-                pcd.paint_uniform_color([0.5, 0.5, 0.5])
+                if not self.show_original_colors:
+                    pcd.paint_uniform_color([0.5, 0.5, 0.5])
                 self.current_target_idx = 0
                 self._scene.scene.add_geometry("Target", pcd, self.material)
             elif len(self.point_clouds) == 1:
                 self.point_clouds.append(pcd)
-                pcd.paint_uniform_color([0, 0, 1])
+                if not self.show_original_colors:
+                    pcd.paint_uniform_color([0, 0, 1])
                 self.current_source_idx = 1
                 self._scene.scene.add_geometry("Source", pcd, self.material)
             else:
@@ -497,6 +557,9 @@ class AppWindow:
             self.point_cloud_loaded = True
             self._update_status_panel()
             print("Point cloud loaded successfully")
+
+            original_colors = self.point_cloud_colors[-1]  # 改为读取最新加入的点云颜色
+            print(f"Original colors: {original_colors[:5]}")  # 打印前5個顏色作為示例
 
             if is_first_load:
                 self._reset_camera_view()
@@ -641,9 +704,6 @@ class AppWindow:
         self._scene.force_redraw()
 
     def _switch_source(self):
-        """
-        切換當前源點雲
-        """
         if self.merged:
             self._show_warning_dialog("Cannot switch source in merged mode. Press 'P' to exit merged mode.")
             return
@@ -663,22 +723,25 @@ class AppWindow:
         self.redo_stack.clear()
 
         new_source = self.point_clouds[self.current_source_idx]
-        new_source.paint_uniform_color([0, 0, 1])  # 藍色
+        if self.show_original_colors:
+            new_source.colors = o3d.utility.Vector3dVector(self.point_cloud_colors[self.current_source_idx])
+        else:
+            new_source.paint_uniform_color([0, 0, 1])  # 藍色
         self._scene.scene.remove_geometry("Source")
         self._scene.scene.add_geometry("Source", new_source, self.material)
 
         if not self.target_hidden:
             new_target = self.point_clouds[self.current_target_idx]
+            if self.show_original_colors:
+                new_target.colors = o3d.utility.Vector3dVector(self.point_cloud_colors[self.current_target_idx])
+            else:
+                new_target.paint_uniform_color([0.5, 0.5, 0.5])  # 灰色
             self._scene.scene.add_geometry("Target", new_target, self.material)
 
-        #self._scene.setup_camera(60.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
         self._update_status_panel()
         print(f"Switched to source {self.current_source_idx}")
 
     def _switch_target(self):
-        """
-        切換當前目標點雲
-        """
         if self.merged:
             self._show_warning_dialog("Cannot switch target in merged mode. Press 'P' to exit merged mode.")
             return
@@ -698,16 +761,21 @@ class AppWindow:
         new_target = self.point_clouds[self.current_target_idx]
         new_source = self.point_clouds[self.current_source_idx]
 
-        new_target.paint_uniform_color([0.5, 0.5, 0.5])  # 灰色
-        new_source.paint_uniform_color([0, 0, 1])  # 藍色
+        if self.show_original_colors:
+            new_target.colors = o3d.utility.Vector3dVector(self.point_cloud_colors[self.current_target_idx])
+            new_source.colors = o3d.utility.Vector3dVector(self.point_cloud_colors[self.current_source_idx])
+        else:
+            new_target.paint_uniform_color([0.5, 0.5, 0.5])  # 灰色
+            new_source.paint_uniform_color([0, 0, 1])  # 藍色
 
         self._scene.scene.remove_geometry("Source")
         self._scene.scene.remove_geometry("Target")
         self._scene.scene.add_geometry("Target", new_target, self.material)
         self._scene.scene.add_geometry("Source", new_source, self.material)
-        #self._scene.setup_camera(60.0, self._scene.scene.bounding_box, self._scene.scene.bounding_box.get_center())
         self._update_status_panel()
         print(f"Switched target to {self.current_target_idx} and source to {self.current_source_idx}")
+
+
 
     def _on_translation_step_changed(self, value):
         """
