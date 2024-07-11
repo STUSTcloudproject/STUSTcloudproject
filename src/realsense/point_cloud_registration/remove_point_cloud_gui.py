@@ -60,16 +60,18 @@ class AppWindow:
 
         self.point_cloud_loaded = False
 
+        self.length = 0
+
         self.is_erasing = False
         self.erase_radius = 10
         self.erase_mode = False
         self.bounding_box_mode = False
         self.bounding_box = None
         self.original_colors = None
-        self.translation_step_bbox = 0.1  # 邊界框平移步長
-        self.translation_step_pc = 0.1  # 點雲平移步長
-        self.rotation_step_pc = 0.1  # 點雲旋轉步長
-        self.resize_step_bbox = 0.1  # 邊界框缩放步長
+        self.translation_step_bbox = 10.0  # 邊界框平移步長
+        self.translation_step_pc = 10.0  # 點雲平移步長
+        self.rotation_step_pc = 10.0  # 點雲旋轉步長
+        self.resize_step_bbox = 10.0  # 邊界框缩放步長
         self.refresh_view_on_mode_change = True  # 切换模式时刷新视角
 
         self.last_mouse_pos = [0, 0]
@@ -202,7 +204,7 @@ class AppWindow:
         self._translation_step_hbox = gui.Horiz(0.25 * em)
         self._translation_step_hbox.add_child(gui.Label("Translation step"))
         self._translation_step_slider = gui.Slider(gui.Slider.DOUBLE)
-        self._translation_step_slider.set_limits(0.01, 1.0)
+        self._translation_step_slider.set_limits(1, 100.0)
         self._translation_step_slider.double_value = self.translation_step_pc
         self._translation_step_slider.set_on_value_changed(self._on_translation_step_pc_changed)
         self._translation_step_hbox.add_child(self._translation_step_slider)
@@ -213,7 +215,7 @@ class AppWindow:
         self._rotation_step_hbox = gui.Horiz(0.25 * em)
         self._rotation_step_hbox.add_child(gui.Label("Rotation step"))
         self._rotation_step_slider = gui.Slider(gui.Slider.DOUBLE)
-        self._rotation_step_slider.set_limits(0.1, 10.0)  # 设置旋转步长范围
+        self._rotation_step_slider.set_limits(1, 100.0)  # 设置旋转步长范围
         self._rotation_step_slider.double_value = self.rotation_step_pc
         self._rotation_step_slider.set_on_value_changed(self._on_rotation_step_pc_changed)
         self._rotation_step_hbox.add_child(self._rotation_step_slider)
@@ -236,8 +238,8 @@ class AppWindow:
         self._translation_hbox = gui.Horiz(0.25 * em)
         self._translation_hbox.add_child(gui.Label("Translation step"))
         self._translation_step_bbox_slider = gui.Slider(gui.Slider.DOUBLE)
-        self._translation_step_bbox_slider.set_limits(0.01, 1.0)
-        self._translation_step_bbox_slider.double_value = 0.1
+        self._translation_step_bbox_slider.set_limits(1, 100.0)
+        self._translation_step_bbox_slider.double_value = self.translation_step_bbox
         self._translation_step_bbox_slider.set_on_value_changed(self._on_translation_step_bbox_changed)
         self._translation_hbox.add_child(self._translation_step_bbox_slider)
 
@@ -248,8 +250,8 @@ class AppWindow:
         self._resize_hbox = gui.Horiz(0.25 * em)
         self._resize_hbox.add_child(gui.Label("Resize step"))
         self._resize_step_bbox_slider = gui.Slider(gui.Slider.DOUBLE)
-        self._resize_step_bbox_slider.set_limits(0.01, 1.0)
-        self._resize_step_bbox_slider.double_value = 0.1
+        self._resize_step_bbox_slider.set_limits(1, 100.0)
+        self._resize_step_bbox_slider.double_value = self.resize_step_bbox
         self._resize_step_bbox_slider.set_on_value_changed(self._on_resize_step_bbox_changed)
         self._resize_hbox.add_child(self._resize_step_bbox_slider)
 
@@ -401,54 +403,54 @@ class AppWindow:
 
             if not self.bounding_box_mode and not self.erase_mode:
                 if event.key == gui.KeyName.A:
-                    self._translate_point_cloud(axis='x', delta=-self.translation_step_pc)
+                    self._translate_point_cloud(axis='x', delta = -(self.length * self.translation_step_pc) / 1000)
                 elif event.key == gui.KeyName.D:
-                    self._translate_point_cloud(axis='x', delta=self.translation_step_pc)
+                    self._translate_point_cloud(axis='x', delta = (self.length * self.translation_step_pc) / 1000)
                 elif event.key == gui.KeyName.W:
-                    self._translate_point_cloud(axis='y', delta=self.translation_step_pc)
+                    self._translate_point_cloud(axis='y', delta = (self.length * self.translation_step_pc) / 1000)
                 elif event.key == gui.KeyName.S:
-                    self._translate_point_cloud(axis='y', delta=-self.translation_step_pc)
+                    self._translate_point_cloud(axis='y', delta = -(self.length * self.translation_step_pc) / 1000)
                 elif event.key == gui.KeyName.Q:
-                    self._translate_point_cloud(axis='z', delta=self.translation_step_pc)
+                    self._translate_point_cloud(axis='z', delta = (self.length * self.translation_step_pc) / 1000)
                 elif event.key == gui.KeyName.E:
-                    self._translate_point_cloud(axis='z', delta=-self.translation_step_pc)
+                    self._translate_point_cloud(axis='z', delta = -(self.length * self.translation_step_pc) / 1000)
                 elif event.key == gui.KeyName.J:
-                    self._rotate_point_cloud(axis='y', delta=-self.rotation_step_pc)
+                    self._rotate_point_cloud(axis='y', delta=np.radians(-(0.25 + ((self.rotation_step_pc - 1) / 99) * (45 - 0.25))))
                 elif event.key == gui.KeyName.L:
-                    self._rotate_point_cloud(axis='y', delta=self.rotation_step_pc)
+                    self._rotate_point_cloud(axis='y', delta=np.radians(0.25 + ((self.rotation_step_pc - 1) / 99) * (45 - 0.25)))
                 elif event.key == gui.KeyName.I:
-                    self._rotate_point_cloud(axis='x', delta=-self.rotation_step_pc)
+                    self._rotate_point_cloud(axis='x', delta=np.radians(-(0.25 + ((self.rotation_step_pc - 1) / 99) * (45 - 0.25))))
                 elif event.key == gui.KeyName.K:
-                    self._rotate_point_cloud(axis='x', delta=self.rotation_step_pc)
+                    self._rotate_point_cloud(axis='x', delta=np.radians(0.25 + ((self.rotation_step_pc - 1) / 99) * (45 - 0.25)))
                 elif event.key == gui.KeyName.U:
-                    self._rotate_point_cloud(axis='z', delta=-self.rotation_step_pc)
+                    self._rotate_point_cloud(axis='z', delta=np.radians(-(0.25 + ((self.rotation_step_pc - 1) / 99) * (45 - 0.25))))
                 elif event.key == gui.KeyName.O:
-                    self._rotate_point_cloud(axis='z', delta=self.rotation_step_pc)
+                    self._rotate_point_cloud(axis='z', delta=np.radians(0.25 + ((self.rotation_step_pc - 1) / 99) * (45 - 0.25)))
             elif self.bounding_box_mode:
                 if event.key == gui.KeyName.A:
-                    self._translate_bounding_box(axis='x', delta=-self.translation_step_bbox)
+                    self._translate_bounding_box(axis='x', delta = -(self.length * self.translation_step_bbox) / 1000)
                 elif event.key == gui.KeyName.D:
-                    self._translate_bounding_box(axis='x', delta=self.translation_step_bbox)
+                    self._translate_bounding_box(axis='x', delta = (self.length * self.translation_step_bbox) / 1000)
                 elif event.key == gui.KeyName.W:
-                    self._translate_bounding_box(axis='y', delta=self.translation_step_bbox)
+                    self._translate_bounding_box(axis='y', delta = (self.length * self.translation_step_bbox) / 1000)
                 elif event.key == gui.KeyName.S:
-                    self._translate_bounding_box(axis='y', delta=-self.translation_step_bbox)
+                    self._translate_bounding_box(axis='y', delta = -(self.length * self.translation_step_bbox) / 1000)
                 elif event.key == gui.KeyName.Q:
-                    self._translate_bounding_box(axis='z', delta=self.translation_step_bbox)
+                    self._translate_bounding_box(axis='z', delta = (self.length * self.translation_step_bbox) / 1000)
                 elif event.key == gui.KeyName.E:
-                    self._translate_bounding_box(axis='z', delta=-self.translation_step_bbox)
+                    self._translate_bounding_box(axis='z', delta = -(self.length * self.translation_step_bbox) / 1000)
                 elif event.key == gui.KeyName.J:
-                    self._resize_bounding_box(axis='x', delta=self.resize_step_bbox)
+                    self._resize_bounding_box(axis='x', delta = -(self.length * self.resize_step_bbox) / 1000)
                 elif event.key == gui.KeyName.L:
-                    self._resize_bounding_box(axis='x', delta=-self.resize_step_bbox)
+                    self._resize_bounding_box(axis='x', delta = (self.length * self.resize_step_bbox) / 1000)
                 elif event.key == gui.KeyName.I:
-                    self._resize_bounding_box(axis='y', delta=self.resize_step_bbox)
+                    self._resize_bounding_box(axis='y', delta = -(self.length * self.resize_step_bbox) / 1000)
                 elif event.key == gui.KeyName.K:
-                    self._resize_bounding_box(axis='y', delta=-self.resize_step_bbox)
+                    self._resize_bounding_box(axis='y', delta = (self.length * self.resize_step_bbox) / 1000)
                 elif event.key == gui.KeyName.U:
-                    self._resize_bounding_box(axis='z', delta=self.resize_step_bbox)
+                    self._resize_bounding_box(axis='z', delta = -(self.length * self.resize_step_bbox) / 1000)
                 elif event.key == gui.KeyName.O:
-                    self._resize_bounding_box(axis='z', delta=-self.resize_step_bbox)
+                    self._resize_bounding_box(axis='z', delta = (self.length * self.resize_step_bbox) / 1000)
                 elif event.key == gui.KeyName.R:
                     self._remove_points_inside_bbox()
                 elif event.key == gui.KeyName.P:
@@ -754,6 +756,7 @@ class AppWindow:
         self._scene.scene.add_geometry("PointCloud", self.point_cloud, self.material)
         self.point_cloud_loaded = True
         self._scene.setup_camera(60.0, self.point_cloud.get_axis_aligned_bounding_box(), self.point_cloud.get_center())
+        self.length = self.get_point_cloud_length()
         print("Random point cloud generated")
 
     def load_point_cloud(self, path):
@@ -778,6 +781,7 @@ class AppWindow:
             self.point_cloud_loaded = True
             if self.refresh_view_on_mode_change:
                 self._scene.setup_camera(60.0, pcd.get_axis_aligned_bounding_box(), pcd.get_center())
+            self.length = self.get_point_cloud_length()    
             print("Point cloud loaded successfully")
 
             # 如果边界框模式启用，更新边界框
@@ -788,6 +792,18 @@ class AppWindow:
 
         except Exception as e:
             self._show_warning_dialog(f"Failed to load point cloud: {e}")
+
+    def get_point_cloud_length(self):
+        if not self.point_cloud_loaded:
+            print("No point cloud loaded.")
+            return None
+
+        bbox = self.point_cloud.get_axis_aligned_bounding_box()
+        min_bound = bbox.min_bound
+        max_bound = bbox.max_bound
+        length = np.linalg.norm(max_bound - min_bound)
+        print(f"Point cloud length: {length}")
+        return length
 
     def _show_warning_dialog(self, message):
         """
