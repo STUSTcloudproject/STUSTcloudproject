@@ -35,9 +35,11 @@ class AppWindow:
         self._scene.scene.set_background([1, 1, 1, 1])  # 設置背景為白色
         self.window.add_child(self._scene)
 
+        self.length = 0
+
         # 默認平移和旋轉步長
-        self.translation_step = 0.0002
-        self.rotation_step = 0.002
+        self.translation_step = 10.0
+        self.rotation_step = 10.0
 
         self.source_hidden = False
         self.target_hidden = False
@@ -238,17 +240,15 @@ class AppWindow:
         設置平移和旋轉步長滑動條
         """
         self._translation_step_slider = gui.Slider(gui.Slider.DOUBLE)
-        self._translation_step_slider.set_limits(0.1, 30.0)
-        self._translation_step_slider.double_value = 15  # 設置默認值為 15
-        self.translation_step = 15 / 10000  # 根據比例調整平移步長
+        self._translation_step_slider.set_limits(1, 100.0)
+        self._translation_step_slider.double_value = self.translation_step
         self._translation_step_slider.set_on_value_changed(self._on_translation_step_changed)
         self.function1_ctrls.add_child(gui.Label("Translation Step"))
         self.function1_ctrls.add_child(self._translation_step_slider)
 
         self._rotation_step_slider = gui.Slider(gui.Slider.DOUBLE)
-        self._rotation_step_slider.set_limits(0.1, 30.0)
-        self._rotation_step_slider.double_value = 15  # 設置默認值為 15
-        self.rotation_step = 15 / 1000  # 根據比例調整旋轉步長
+        self._rotation_step_slider.set_limits(1, 100.0)
+        self._rotation_step_slider.double_value = self.rotation_step
         self._rotation_step_slider.set_on_value_changed(self._on_rotation_step_changed)
         self.function1_ctrls.add_child(gui.Label("Rotation Step"))
         self.function1_ctrls.add_child(self._rotation_step_slider)
@@ -533,12 +533,9 @@ class AppWindow:
             
             # 保存原始顏色，如果沒有則設置為灰色
             if pcd.has_colors():
-                print("Point cloud has colors")
                 colors = np.asarray(pcd.colors)
-                print(f"Loaded colors: {colors[:5]}")  # 打印前5個顏色作為示例
                 self.point_cloud_colors.append(colors.copy())  # 保存颜色的副本
             else:
-                print("Point cloud does not have colors")
                 self.point_cloud_colors.append(np.full((len(pcd.points), 3), [0.5, 0.5, 0.5]))
 
             is_first_load = len(self.point_clouds) == 0
@@ -555,6 +552,7 @@ class AppWindow:
                     pcd.paint_uniform_color([0, 0, 1])
                 self.current_source_idx = 1
                 self._scene.scene.add_geometry("Source", pcd, self.material)
+                self.length = self.get_point_cloud_length(pcd)
             else:
                 self.point_clouds.append(pcd)
 
@@ -563,7 +561,6 @@ class AppWindow:
             print("Point cloud loaded successfully")
 
             original_colors = self.point_cloud_colors[-1]  # 改为读取最新加入的点云颜色
-            print(f"Original colors: {original_colors[:5]}")  # 打印前5個顏色作為示例
 
             if is_first_load:
                 self._reset_camera_view()
@@ -571,6 +568,17 @@ class AppWindow:
         except Exception as e:
             print(f"Failed to load point cloud: {e}")
 
+    def get_point_cloud_length(self, pcd):
+        if not self.point_cloud_loaded:
+            print("No point cloud loaded.")
+            return None
+
+        bbox = pcd.get_axis_aligned_bounding_box()
+        min_bound = bbox.min_bound
+        max_bound = bbox.max_bound
+        length = np.linalg.norm(max_bound - min_bound)
+        print(f"Point cloud length: {length}")
+        return length
 
     def _on_key(self, event):
         """
@@ -587,29 +595,29 @@ class AppWindow:
                 elif event.key == gui.KeyName.B:
                     self._switch_target()
                 elif event.key == gui.KeyName.W:
-                    self._translate_point_cloud([0, self.translation_step, 0])  # 平移步長縮放 100 倍
+                    self._translate_point_cloud([0, (self.length * self.translation_step) / 1000, 0])  # 平移步長縮放 100 倍
                 elif event.key == gui.KeyName.S:
-                    self._translate_point_cloud([0, -self.translation_step, 0])
+                    self._translate_point_cloud([0, -(self.length * self.translation_step) / 1000, 0])
                 elif event.key == gui.KeyName.A:
-                    self._translate_point_cloud([-self.translation_step, 0, 0])
+                    self._translate_point_cloud([-(self.length * self.translation_step) / 1000, 0, 0])
                 elif event.key == gui.KeyName.D:
-                    self._translate_point_cloud([self.translation_step, 0, 0])
+                    self._translate_point_cloud([(self.length * self.translation_step) / 1000, 0, 0])
                 elif event.key == gui.KeyName.Q:
-                    self._translate_point_cloud([0, 0, self.translation_step])
+                    self._translate_point_cloud([0, 0, (self.length * self.translation_step) / 1000])
                 elif event.key == gui.KeyName.E:
-                    self._translate_point_cloud([0, 0, -self.translation_step])
+                    self._translate_point_cloud([0, 0, -(self.length * self.translation_step) / 1000])
                 elif event.key == gui.KeyName.I:
-                    self._rotate_point_cloud([self.rotation_step, 0, 0])  # 旋轉步長縮放 100 倍
+                    self._rotate_point_cloud([np.radians(-(0.25 + ((self.rotation_step - 1) / 99) * (45 - 0.25))), 0, 0])  # 旋轉步長縮放 100 倍
                 elif event.key == gui.KeyName.K:
-                    self._rotate_point_cloud([-self.rotation_step, 0, 0])
+                    self._rotate_point_cloud([-np.radians(-(0.25 + ((self.rotation_step - 1) / 99) * (45 - 0.25))), 0, 0])
                 elif event.key == gui.KeyName.J:
-                    self._rotate_point_cloud([0, self.rotation_step, 0])
+                    self._rotate_point_cloud([0, np.radians(-(0.25 + ((self.rotation_step - 1) / 99) * (45 - 0.25))), 0])
                 elif event.key == gui.KeyName.L:
-                    self._rotate_point_cloud([0, -self.rotation_step, 0])
+                    self._rotate_point_cloud([0, -np.radians(-(0.25 + ((self.rotation_step - 1) / 99) * (45 - 0.25))), 0])
                 elif event.key == gui.KeyName.U:
-                    self._rotate_point_cloud([0, 0, self.rotation_step])
+                    self._rotate_point_cloud([0, 0, np.radians(-(0.25 + ((self.rotation_step - 1) / 99) * (45 - 0.25)))])
                 elif event.key == gui.KeyName.O:
-                    self._rotate_point_cloud([0, 0, -self.rotation_step])
+                    self._rotate_point_cloud([0, 0, -np.radians(-(0.25 + ((self.rotation_step - 1) / 99) * (45 - 0.25)))])
                 elif event.key == gui.KeyName.R:
                     self._on_start_registration()
                 elif event.key == gui.KeyName.Z:
@@ -733,7 +741,7 @@ class AppWindow:
             new_source.paint_uniform_color([0, 0, 1])  # 藍色
         self._scene.scene.remove_geometry("Source")
         self._scene.scene.add_geometry("Source", new_source, self.material)
-
+        self.length = self.get_point_cloud_length(new_source)
         if not self.target_hidden:
             new_target = self.point_clouds[self.current_target_idx]
             if self.show_original_colors:
@@ -787,7 +795,7 @@ class AppWindow:
         參數:
         value (float): 新的平移步長
         """
-        self.translation_step = value / 10000
+        self.translation_step = value
         print(f"Translation step set to {self.translation_step}")
 
     def _on_rotation_step_changed(self, value):
@@ -796,7 +804,7 @@ class AppWindow:
         參數:
         value (float): 新的旋轉步長
         """
-        self.rotation_step = value / 1000
+        self.rotation_step = value
         print(f"Rotation step set to {self.rotation_step}")
 
     def _on_start_registration(self):
