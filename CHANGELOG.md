@@ -1,11 +1,19 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.2.1] - 2023-07-22
 ### Added
-在 `src/realsense/point_cloud_registration` 資料夾下
-- registration_manual_automatic.py ---------- 配準工具(尚未導入數據獲取)
-- remove_point_cloud_gui.py------------------ 點雲編輯器(實現橡皮擦與邊際框功能)
- 
+- View 模式下新增以下功能
+- 新增 Depth Stream 功能
+- 新增 Registration 功能
+- 新增 Point Cloud Remove 功能
+- 新增 PointCloud Mesh  功能
+- 新增 Visualization 功能
+- 調整初始視窗與控件大小
+
+### Improved
+- 初始視窗大小從硬編碼改為在 config.json 設定
 
 ## [0.1.1] - 2023-06-14
 ### Added
