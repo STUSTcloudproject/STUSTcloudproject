@@ -8,13 +8,17 @@
             }
         },
         "sizes": {
+            "gui": {
+                "width": 1650, 
+                "height": 1100
+            },
             "bars": {
                 "activate": 80,
                 "start": 60
             },
             "panels": {
                 "main": [80, 370, 600],
-                "nested": [60, 0, 280]
+                "nested": [60, 0, 300]
             }
         },
         "settings": {
