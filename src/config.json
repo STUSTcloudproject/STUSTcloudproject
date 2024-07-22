@@ -13,8 +13,8 @@
                 "start": 60
             },
             "panels": {
-                "main": [80, 235, 600],
-                "nested": [60, 0, 150]
+                "main": [80, 370, 600],
+                "nested": [60, 0, 280]
             }
         },
         "settings": {
@@ -151,7 +151,7 @@
             "View": {
                 "Required": {
                     "name": ["Depth Stream", "Registration", "Point Cloud Remove", "PointCloud Mesh Editor", "Visualization"],
-                    "description": ["", "", "", "", ""]
+                    "description": ["數據獲取", "點雲配準", "點雲處理", " 點雲 與 Mesh 操作", "點雲可視化"]
                 }
             }
         },
@@ -188,7 +188,7 @@
     },
     "View": {
       "title": "View",
-      "content": "在 View 模式下用戶可以查看錄製和處理的點雲數據。用戶可以選擇要查看的數據集並進行瀏覽和分析。這個模式沒有子主題。",
+      "content": "在 View 模式下，用戶可以進行多種操作和可視化點雲數據，包括以下小主題：\n- **Depth Stream**: 獲取和保存深度圖像，並使用 Open3d 可視化深度數據。\n- **Registration**: 匯入並配準多個點雲數據，合併為一個點雲。\n- **Point Cloud Remove**: 使用 Eraser 和 Bounding Box 模式選擇並刪除或著色點雲數據。\n- **PointCloud Mesh Editor**: 對點雲進行降採樣，生成 Mesh 或將 Mesh 取樣為點雲。\n- **Visualization**: 匯入點雲數據並進行可視化操作。",
       "background_color": "#1E1E1E",
       "font_color": "#DCDCDC",
       "title_font_size": "24pt",
@@ -292,7 +292,7 @@
     },
     "Registration": {
         "title": "Registration",
-        "content": " xxx",
+        "content": "點雲配準功能，用戶可以匯入多個點雲數據進行點雲配準，最終合併為一個點雲數據並匯出。",
         "background_color": "#1E1E1E",
         "font_color": "#DCDCDC",
         "title_font_size": "24pt",
@@ -300,7 +300,7 @@
     },
     "Point Cloud Remove": {
         "title": "Point Cloud Remove",
-        "content": " xxx",
+        "content": "用戶可以在 **Eraser** 與 **Bounding Box** 模式下選擇：\n\n### Eraser 模式\n\n- 用戶可以直接按下滑鼠左鍵刪除點。\n\n### Bounding Box 模式\n\n用戶可以基於紅框進行點雲的處理，包括：\n\n- 刪除框裡的點\n- 保留框裡的點\n- 著色框裡的點",
         "background_color": "#1E1E1E",
         "font_color": "#DCDCDC",
         "title_font_size": "24pt",
@@ -308,7 +308,7 @@
     },
     "PointCloud Mesh Editor": {
         "title": "PointCloud Mesh Editor",
-        "content": " xxx",
+        "content": "點雲與 Mesh 操作，用戶可以對點雲進行降採樣、生成 Mesh 操作，也可以將 Mesh 取樣為點雲。",
         "background_color": "#1E1E1E",
         "font_color": "#DCDCDC",
         "title_font_size": "24pt",
@@ -316,7 +316,7 @@
     },
     "Visualization": {
         "title": "Visualization",
-        "content": " xxx",
+        "content": "點雲可視化，用戶可以匯入一個點雲數據並進行可視化。",
         "background_color": "#1E1E1E",
         "font_color": "#DCDCDC",
         "title_font_size": "24pt",
