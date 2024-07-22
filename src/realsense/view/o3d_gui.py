@@ -812,6 +812,9 @@ class AppWindow:
 
         self._scene.scene.scene.render_to_image(on_image)
 
+    def close(self):
+        gui.Application.instance.quit()
+
 
 def main():
     # We need to initalize the application, which finds the necessary shaders
@@ -830,9 +833,10 @@ def main():
 
     # Run the event loop. This will not return until the last window is closed.
     gui.Application.instance.run()
+    return w
 
 def run():
-    main()
+    return main()
     
 if __name__ == "__main__":
     main()
