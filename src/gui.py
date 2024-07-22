@@ -540,11 +540,11 @@ class MainInterface(QWidget):
         """
         if not self.activated:
             selected_items_dict = self.get_treeWidget_selected()
-
+            
+            if not self.check_selected_items(selected_items_dict):
+                return
+            
             if selected_items_dict and self.current_mode != "View":
-                if not self.check_selected_items(selected_items_dict):
-                    return
-
                 success, selected_path, realsense_selection = self.create_detail_panel(self.current_mode, selected_items_dict)
                 if success:                  
                     self.set_terminal_message("start_bar", f"Send selected items to Controller: {self.current_mode} {selected_items_dict}")
@@ -556,8 +556,7 @@ class MainInterface(QWidget):
                         self.send_to_view("send_run_system_selected_items", selected_items_dict=selected_items_dict, selected_path=selected_path)       
                     self.activated = True
             else:
-                self.activated = True
-                
+                self.activated = True        
                 self.set_terminal_message("start_bar", f"Send selected items to Controller: {self.current_mode} {selected_items_dict}")
                 self.send_to_view("send_view_selected_items", selected_items_dict)
         else:
