@@ -136,10 +136,6 @@
                 "Required": {
                     "name": ["Record imgs", "Record rosbag", "Playback rosbag"],
                     "description": ["錄製rgbd文件", "錄製.bag文件", "回放.bag文件"]
-                },
-                "Optional": {
-                    "name": ["Point Cloud"],
-                    "description": ["即時處理點雲"]
                 }
             },
             "RunSystem": {
@@ -152,10 +148,15 @@
                     "description": [" ", " ", " "]
                 }
             },
-            "View": {}
+            "View": {
+                "Required": {
+                    "name": ["Depth Stream", "Registration", "Point Cloud Remove", "PointCloud Mesh Editor", "Visualization"],
+                    "description": ["", "", "", "", ""]
+                }
+            }
         },
         "selection_mode": {
-            "single": ["Record"],
+            "single": ["Record", "View"],
             "multiple": ["RunSystem"]
         },
         "callback": "callback"
@@ -280,6 +281,46 @@
       "font_color": "#DCDCDC",
       "title_font_size": "24pt",
       "content_font_size": "12pt"
+    },
+    "Depth Stream": {
+        "title": "Depth Stream",
+        "content": " Open3d 官方的數據獲取 gui ，點擊 Save Point Cloud 按鈕，保存深度圖像，並創建 Open3d 可視化介面來顯示獲取的深度數據。",
+        "background_color": "#1E1E1E",
+        "font_color": "#DCDCDC",
+        "title_font_size": "24pt",
+        "content_font_size": "12pt"
+    },
+    "Registration": {
+        "title": "Registration",
+        "content": " xxx",
+        "background_color": "#1E1E1E",
+        "font_color": "#DCDCDC",
+        "title_font_size": "24pt",
+        "content_font_size": "12pt"
+    },
+    "Point Cloud Remove": {
+        "title": "Point Cloud Remove",
+        "content": " xxx",
+        "background_color": "#1E1E1E",
+        "font_color": "#DCDCDC",
+        "title_font_size": "24pt",
+        "content_font_size": "12pt"
+    },
+    "PointCloud Mesh Editor": {
+        "title": "PointCloud Mesh Editor",
+        "content": " xxx",
+        "background_color": "#1E1E1E",
+        "font_color": "#DCDCDC",
+        "title_font_size": "24pt",
+        "content_font_size": "12pt"
+    },
+    "Visualization": {
+        "title": "Visualization",
+        "content": " xxx",
+        "background_color": "#1E1E1E",
+        "font_color": "#DCDCDC",
+        "title_font_size": "24pt",
+        "content_font_size": "12pt"
     }
     },
     "terminal": {
