@@ -701,7 +701,13 @@ class MainInterface(QWidget):
         回傳:
         QSize: 視窗大小。
         """
-        return QSize(1650, 1100)
+        if self.config is None:
+            return QSize(1200, 800)
+        else:
+            return QSize(
+                self.config['ui']['sizes']['gui']['width'], 
+                self.config['ui']['sizes']['gui']['height']
+                )
     
     def setZeroMarginsAndSpacing(self, layout):
         """
