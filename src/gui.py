@@ -541,7 +541,7 @@ class MainInterface(QWidget):
         if not self.activated:
             selected_items_dict = self.get_treeWidget_selected()
 
-            if selected_items_dict:
+            if selected_items_dict and self.current_mode != "View":
                 if not self.check_selected_items(selected_items_dict):
                     return
 
@@ -641,15 +641,18 @@ class MainInterface(QWidget):
                 realsense_selection=realsense_selection, 
                 selected_path=selected_path,
                 data=data
-                )
+            )
         elif mode == "send_run_system_selected_items":
             self.callback_to_view(
                 "start_run_system", 
                 selected_items_dict=selected_items_dict, 
                 selected_path=selected_path,
-                )
+            )
         elif mode == "send_view_selected_items":
-            self.callback_to_view("start_view_system")
+            self.callback_to_view(
+                "start_view_system", 
+                selected_items_dict=selected_items_dict
+            )
             
         elif mode == "get_realsense_profiles":
             return self.callback_to_view("get_realsense_profiles")
