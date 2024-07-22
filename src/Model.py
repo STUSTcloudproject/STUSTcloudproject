@@ -31,10 +31,11 @@ class Model:
         elif mode == 'stop_record':
             self.send_to_realsense_recorder('stop_record')
             self.send_to_reconstruction_system('stop_run_system')
+            self.send_to_view_system('stop_view_system')
         elif mode == 'start_run_system':
             self.send_to_reconstruction_system('start_run_system', data=config_dict)
         elif mode == 'start_view_system':
-            self.send_to_view_system('start_view_system')
+            self.send_to_view_system('start_view_system', data=config_dict)
 
     def send_to_controller(self, mode, data):
         """
@@ -47,7 +48,7 @@ class Model:
         if mode in ['record_imgs', 'show_error', 'terminal_print']:
             self.controller_callback(mode, data)
 
-    def send_to_view_system(self, mode):
+    def send_to_view_system(self, mode, data=None):
         """
         向視圖系統發送數據並啟動視圖系統
 
@@ -55,8 +56,9 @@ class Model:
         mode (str): 操作模式
         """
         if mode == 'start_view_system':
-            self.view_system = rs.ViewSystem(self.recive_from_view_system)
-            self.view_system.run()
+            self.start_view_system(mode, data)
+        elif mode == 'stop_view_system':
+            self.stop_view_system(mode)
 
     def send_to_reconstruction_system(self, mode, data=None):
         """
@@ -217,6 +219,14 @@ class Model:
         """
         if self.recorder:
             self.recorder.recive_from_model(mode)
+
+    def start_view_system(self, mode, data):     
+        self.view_system = rs.ViewSystem(self.recive_from_view_system)
+        self.view_system.recive_from_model(mode, data)
+
+    def stop_view_system(self, mode):
+        if self.view_system:
+            self.view_system.recive_from_model(mode)
 
     def check_path(self, config_dict):
         """
