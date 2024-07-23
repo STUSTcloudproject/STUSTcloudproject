@@ -4,7 +4,7 @@ import multiprocessing
 from open3d.visualization import gui
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-import o3d_gui
+import visualization
 import PointCloud_Mesh_Editor
 import registration_manual_automatic
 import remove_point_cloud_gui
@@ -16,7 +16,7 @@ def run_view_system(data):
         print("\n\nView System is running\n\n")
         gui.Application.instance.initialize()
         if data['Visualization']:
-            app_window = o3d_gui.AppWindow(1024, 768)
+            app_window = visualization.AppWindow(1024, 768)
         elif data['Registration']:
             app_window = registration_manual_automatic.AppWindow(1024, 768)
         elif data['Point Cloud Remove']:
