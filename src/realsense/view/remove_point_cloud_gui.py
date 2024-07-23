@@ -41,6 +41,7 @@ def world_to_screen(point, view_matrix, proj_matrix, frame_width, frame_height):
 
 class AppWindow:
     MENU_OPEN = 1
+    MENU_EXPORT_MERGED_POINT_CLOUD = 2
     MENU_QUIT = 3
     MENU_SHOW_SETTINGS = 11
     MENU_SHOW_POINT_CLOUD_CONTROLS = 12
@@ -103,12 +104,13 @@ class AppWindow:
                 app_menu = gui.Menu()
                 app_menu.add_item("About", AppWindow.MENU_ABOUT)
                 app_menu.add_separator()
-                app_menu.add_item("Quit", AppWindow.MENU_QUIT)
+                app_menu.add_item("Quit\t\t\t\tESC", AppWindow.MENU_QUIT)
             file_menu = gui.Menu()
             file_menu.add_item("Open...", AppWindow.MENU_OPEN)
+            file_menu.add_item("Export Merged Point Cloud\tX", AppWindow.MENU_EXPORT_MERGED_POINT_CLOUD)
             if not isMacOS:
                 file_menu.add_separator()
-                file_menu.add_item("Quit", AppWindow.MENU_QUIT)
+                file_menu.add_item("Quit\t\t\t\tESC", AppWindow.MENU_QUIT)
             settings_menu = gui.Menu()
             settings_menu.add_item("View Controls", AppWindow.MENU_SHOW_SETTINGS)
             settings_menu.add_item("Point Cloud Controls", AppWindow.MENU_SHOW_POINT_CLOUD_CONTROLS)
@@ -127,6 +129,7 @@ class AppWindow:
             gui.Application.instance.menubar = menu
 
         self.window.set_on_menu_item_activated(AppWindow.MENU_OPEN, self._on_menu_open)
+        self.window.set_on_menu_item_activated(AppWindow.MENU_EXPORT_MERGED_POINT_CLOUD, self._on_menu_export_merged_point_cloud)
         self.window.set_on_menu_item_activated(AppWindow.MENU_QUIT, self._on_menu_quit)
         self.window.set_on_menu_item_activated(AppWindow.MENU_SHOW_SETTINGS, self._on_menu_toggle_view_controls)
         self.window.set_on_menu_item_activated(AppWindow.MENU_SHOW_POINT_CLOUD_CONTROLS, self._on_menu_toggle_point_cloud_controls)
@@ -714,6 +717,12 @@ class AppWindow:
         dlg.set_on_cancel(self._on_file_dialog_cancel)
         dlg.set_on_done(self._on_load_dialog_done)
         self.window.show_dialog(dlg)
+
+    def _on_menu_export_merged_point_cloud(self):
+        """
+        點擊菜單中的“Export Merged Point Cloud”選項時觸發
+        """
+        self._export_current_point_cloud()
 
     def _on_file_dialog_cancel(self):
         self.window.close_dialog()
