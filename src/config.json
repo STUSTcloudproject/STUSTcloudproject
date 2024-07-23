@@ -168,7 +168,7 @@
     "display_text": {
         "Home": {
       "title": "Home",
-      "content": "### 應用說明\n\n應用涵蓋從數據獲取、數據處理與模型可視化，使用Open3D庫來處理數據。\n\n應用包含以下功能：\n\n- **Record** : 數據獲取\n\n- **RunSystem** : 數據處理\n\n- **View** : 模型可視化\n",
+      "content": "### 應用說明\n\n應用涵蓋從數據獲取、數據處理與模型可視化，使用Open3D庫來處理數據。\n\n應用包含以下功能：\n\n- **Record** : 數據獲取\n\n- **RunSystem** : 數據處理\n\n- **View** : 點雲與 Mesh 操作與可視化\n",
       "background_color": "#1E1E1E",
       "font_color": "#DCDCDC",
       "title_font_size": "24pt",
