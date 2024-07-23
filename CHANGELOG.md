@@ -5,6 +5,7 @@
 ## [0.2.1] - 2023-07-22
 ### Fixed
 - 修正 View 模式下，沒有選擇項目並按下開始時，並未跑出警示框的 BUG。
+- 修正 remove_point_cloud_gui.py 裡 menubar 沒有匯出檔案的選項。
 
 ### Improved
 - 更新 config.json 裡關於文字面板裡 Home 模式的內容
