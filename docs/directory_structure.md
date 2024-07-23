@@ -56,7 +56,12 @@ MVC_gui/
 │   │   └── view/
 │   │   │   ├── __init__.py
 │   │   │   ├── view.py
-│   │   │   ├── o3d_gui.py
+│   │   │   ├── online_processing.py
+│   │   │   ├── online_processing_pc_vis.py
+│   │   │   ├── registration_manual_automatic.py
+│   │   │   ├── remove_point_cloud_gui.py
+│   │   │   ├── PointCloud_Mesh_Editor.py
+│   │   │   ├── visualization.py
 │   │   │   └── README.md
 │   │   └── README.md
 │   ├── config.json
