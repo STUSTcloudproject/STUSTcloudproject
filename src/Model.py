@@ -188,7 +188,7 @@ class Model:
             record_rosbag=config_dict['selected_items_dict']['Record rosbag'],
             record_imgs=config_dict['selected_items_dict']['Record imgs'],
             playback_rosbag=config_dict['selected_items_dict']['Playback rosbag'],
-            calculate_overlap=config_dict['selected_items_dict']['Point Cloud'],
+            calculate_overlap=False,
             overwrite=True,
             width=config_dict['realsense_selection'][0][0],
             height=config_dict['realsense_selection'][0][1],
