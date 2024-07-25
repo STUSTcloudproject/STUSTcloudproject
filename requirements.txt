@@ -1,5 +1,10 @@
-pyrealsense2
-numpy
-opencv-python
-open3d
-PyQt5
+pyrealsense2==2.54.2.5684
+numpy==1.21.4
+opencv-python==4.9.0.80
+open3d==0.18.0
+pymeshlab==2023.12.post1
+PyQt5==5.15.10
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.13.0
+matplotlib==3.7.3
+matplotlib-inline==0.1.6
