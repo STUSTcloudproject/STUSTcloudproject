@@ -2,14 +2,17 @@
 
 ## [Unreleased]
 
-## [0.2.1] - 2023-07-22
+## [0.2.2] - 2023-07-25
 ### Added
 - 新增 run.bat 批次檔來支援在虛擬環境一鍵開啟。
 
 ### Fixed
+- 修正 Model.py 中已刪除的功能(點雲即時可視化)，產生的 BUG
+
+## [0.2.1] - 2023-07-22
+### Fixed
 - 修正 View 模式下，沒有選擇項目並按下開始時，並未跑出警示框的 BUG。
 - 修正 remove_point_cloud_gui.py 裡 menubar 沒有匯出檔案的選項。
-- 修正 Model.py 中已刪除的功能(點雲即時可視化)，產生的 BUG
 
 ### Improved
 - 更新 config.json 裡關於文字面板裡 Home 模式的內容
