@@ -76,4 +76,7 @@ MVC_gui/
 │   ├── widgets.py
 │   ├── tool.py
 │   └── README.md
+├── CHANGELOG.md
+├── requirements.txt
+├── run.bat
 └── README.md
