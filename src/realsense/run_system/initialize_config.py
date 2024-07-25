@@ -101,6 +101,8 @@ def initialize_config(config, message_queue):
     set_default_value(config, "template_global_mesh", "scene/integrated.ply")
     set_default_value(config, "template_global_traj", "scene/trajectory.log")
 
+    config["path_dataset"] = os.getcwd() + '\\' + config["path_dataset"].replace("/", "\\")
+
     if config["path_dataset"].endswith(".bag"):
         assert os.path.isfile(config["path_dataset"]), (
             f"File {config['path_dataset']} not found.")
