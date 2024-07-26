@@ -107,7 +107,7 @@ class AppWindow:
                 app_menu.add_item("Quit\t\t\t\tESC", AppWindow.MENU_QUIT)
             file_menu = gui.Menu()
             file_menu.add_item("Open...", AppWindow.MENU_OPEN)
-            file_menu.add_item("Export Merged Point Cloud\tX", AppWindow.MENU_EXPORT_MERGED_POINT_CLOUD)
+            file_menu.add_item("Export Point Cloud\tX", AppWindow.MENU_EXPORT_MERGED_POINT_CLOUD)
             if not isMacOS:
                 file_menu.add_separator()
                 file_menu.add_item("Quit\t\t\t\tESC", AppWindow.MENU_QUIT)
