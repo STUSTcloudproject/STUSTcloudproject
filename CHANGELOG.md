@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased]
+## [Unreleased] - 2023-07-26
+### Fixed
+- 修正 run.bat  
 
 ## [0.2.2] - 2023-07-25
 ### Added
