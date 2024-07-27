@@ -1,9 +1,12 @@
 # Changelog
 
-## [Unreleased] - 2023-07-26
+## [Unreleased] - 2023-07-27
 ### Fixed
 - 修正 run.bat
 - 修正 remove_point_cloud_gui.py 匯出文件按鈕的名稱為 Export Point Cloud
+
+### Improved
+- 更新項目 README.md
 
 ## [0.2.2] - 2023-07-25
 ### Added
