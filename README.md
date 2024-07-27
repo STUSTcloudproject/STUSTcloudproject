@@ -1,39 +1,29 @@
 # RealSense Data Processing System
+<div align="center">
+123
+<div align="left">
 
 ## 簡介
+本項目應用範圍涵蓋從感測器的數據獲取、數據處理到生成網格，用戶可以通過深度感測器在本項目的 Record 模式上獲取 RGBD 數據或是在 View 模式上獲取點雲，RGBD 數據可以使用本項目的 RunSystem 模式，把數據直接處理成 mesh 網格，適合用於重建三維場景的重建，單個物體的情況可以使用 View 模式下的功能來獲取點雲，除了獲取數據， View 模式還包括取多功能，點雲 手/自動 配準、點雲處理、點雲轉網格、網格轉點雲、降採樣、點雲可視化，其中使用的庫分別為以下
+- `pyrealsense2` --------------------- 數據獲取
+- `open3d` ----------------------------- 數據處理
+- `pymeshlab` ------------------------- 生成網格
+- `PyQt5` ------------------------------- 主gui框架
+- `open3d.visualization.gui` ----- 點雲操作相關可視化介面
 
-此項目旨在提供一個基於 RealSense 的數據處理系統，包括數據錄製、數據處理和數據視圖顯示功能。<br>
-數據錄製部分基於pyrealsense2，數據處理基於open3d，介面框架PyQt5。
+## 環境配置
 
-## 目錄
+以下指令需再 Python 版本等於 3.10 的環境下進行
 
-- [安裝和配置](#安裝和配置)
-- [使用說明](#使用說明)
-- [詳細文檔](#詳細文檔)
-
-## 安裝和配置
-
-### 前置條件
-
-請確保已安裝以下軟件：
-- Python 3.10 <span style="color: rgba(255, 0, 0, 0.90); font-style: italic;">限定使用3.10</span>
-- pip
-
-### 安裝步驟
-
-1. 克隆此存儲庫到本地：
-    ```bash
-    git clone https://github.com/STUSTcloudproject/MVC_gui.git
-    ```
-
-2. 進入項目目錄並安裝所需依賴：
-    ```bash
-    cd MVC_gui
-    pip install -r requirements.txt
-    ```
+### 本項目目前只在 Windows 10/11 環境下進行測試
+#### 通過 pip 安裝依賴 
+```bash
+pip install -r requirements.txt
+```
 
 ## 使用說明
 
+### 直接啟動
 1. 進入 `src` 資料夾：
     ```bash
     cd src
@@ -43,12 +33,9 @@
     ```bash
     python main.py
     ```
-
-3. 使用 GUI 進行操作：
-    - `Home`：查看應用說明
-    - `Record`：錄製各種類型的數據，包括圖像和 .bag 文件與 .bag 文件回放
-    - `RunSystem`：進行點雲數據處理，輸出 mesh 網格
-    - `View`：查看各式模型，包括點雲數據、mesh網格等
+### 使用整合包
+1. 下載並解壓縮 `STUSTcloudproject.zip`
+2. 雙擊 `run.bat`
 
 ## 詳細文檔
 
