@@ -11,8 +11,8 @@ import queue
 import os
 
 from pipeline_model import pipeline_process, PipelineModel  # Import your pipeline_process and PipelineModel
-import point_cloud_registration as pcr
-import fast_point_cloud_registration as fpcr
+import registration_ransac_icp as pcr_ransac
+import registration_fast_icp as pcr_fast
 
 isMacOS = (platform.system() == "Darwin")
 
@@ -41,7 +41,11 @@ class OnlineRegistration:
         self.current_index = -1
         self.imported_filenames = []
         self.voxel_size = 0.05
-        self.registration_quality = "High"
+        self.registration_mode = "RANSAC"
+        self.ransac_distance_multiplier = 1.5
+        self.ransac_max_iterations = 4000000
+        self.ransac_max_validation = 500
+        self.icp_distance_multiplier = 0.4
 
         self.pipeline_running = False
         self.cv_running = False
@@ -184,43 +188,87 @@ class OnlineRegistration:
 
     def _setup_process_controls(self):
         em = self.window.theme.font_size
-        grid2 = gui.VGrid(2, 0.25 * em)
+        self.grid2 = gui.Vert(0.25 * em)  # 使用垂直布局
 
         # Depth Max Slider
-        grid2.add_child(gui.Label("Depth Max"))
+        self.grid2.add_child(gui.Label("Depth Max"))
         self.depth_max_slider = gui.Slider(gui.Slider.DOUBLE)
         self.depth_max_slider.set_limits(0.1, 10.0)
         self.depth_max_slider.double_value = 3.0
         self.depth_max_slider.set_on_value_changed(self._on_depth_max_changed)
-        grid2.add_child(self.depth_max_slider)
+        self.grid2.add_child(self.depth_max_slider)
 
         # Depth Min Slider
-        grid2.add_child(gui.Label("Depth Min"))
+        self.grid2.add_child(gui.Label("Depth Min"))
         self.depth_min_slider = gui.Slider(gui.Slider.DOUBLE)
         self.depth_min_slider.set_limits(0.1, 10.0)
         self.depth_min_slider.double_value = 0.1
         self.depth_min_slider.set_on_value_changed(self._on_depth_min_changed)
-        grid2.add_child(self.depth_min_slider)
+        self.grid2.add_child(self.depth_min_slider)
 
         # Voxel Size Slider
-        grid2.add_child(gui.Label("Voxel Size"))
+        self.grid2.add_child(gui.Label("Voxel Size"))
         self.voxel_size_slider = gui.Slider(gui.Slider.DOUBLE)
         self.voxel_size_slider.set_limits(0.01, 0.2)
         self.voxel_size_slider.double_value = 0.05
         self.voxel_size_slider.set_on_value_changed(self._on_voxel_size_changed)
-        grid2.add_child(self.voxel_size_slider)
+        self.grid2.add_child(self.voxel_size_slider)
 
-        # Add Combobox for Registration Quality (配準品質)
-        grid2.add_child(gui.Label("Registration Quality"))
-        self.registration_quality_combobox = gui.Combobox()
-        self.registration_quality_combobox.add_item("High")
-        self.registration_quality_combobox.add_item("Low")
-        self.registration_quality_combobox.selected_text = "High"  # Set default value
-        self.registration_quality_combobox.set_on_selection_changed(self._on_registration_quality_changed)  # Use correct callback
-        grid2.add_child(self.registration_quality_combobox)
+        # Registration Mode Combobox
+        self.grid2.add_child(gui.Label("Registration Mode"))
+        self.registration_mode_combobox = gui.Combobox()
+        self.registration_mode_combobox.add_item("RANSAC")
+        self.registration_mode_combobox.add_item("FAST")
+        self.registration_mode_combobox.selected_text = "RANSAC"
+        self.registration_mode_combobox.set_on_selection_changed(self._on_registration_mode_changed)
+        self.grid2.add_child(self.registration_mode_combobox)
 
-        self.process_ctrls.add_child(grid2)
+        # Create a layout for RANSAC-related controls
+        self.ransac_layout = gui.Vert(0.25 * em)
 
+        # Add some padding or indentation to give a visual sense of hierarchy
+        ransac_inner_layout = gui.Vert(0.5 * em, gui.Margins(2 * em, 0, 0, 0))  # Indent to show sub-item
+
+        # RANSAC Distance Threshold
+        ransac_inner_layout.add_child(gui.Label("RANSAC Distance Threshold"))
+        self.ransac_distance_slider = gui.Slider(gui.Slider.DOUBLE)
+        self.ransac_distance_slider.set_limits(1.0, 5.0)
+        self.ransac_distance_slider.double_value = 1.5
+        self.ransac_distance_slider.set_on_value_changed(self._on_ransac_distance_changed)
+        ransac_inner_layout.add_child(self.ransac_distance_slider)
+
+        # RANSAC Max Iterations
+        ransac_inner_layout.add_child(gui.Label("RANSAC Max Iterations"))
+        self.ransac_iterations_slider = gui.Slider(gui.Slider.INT)
+        self.ransac_iterations_slider.set_limits(100000, 5000000)
+        self.ransac_iterations_slider.int_value = 4000000
+        self.ransac_iterations_slider.set_on_value_changed(self._on_ransac_iterations_changed)
+        ransac_inner_layout.add_child(self.ransac_iterations_slider)
+
+        # RANSAC Max Validation
+        self.ransac_layout.add_child(gui.Label("RANSAC Max Validation"))
+        self.ransac_max_validation_slider = gui.Slider(gui.Slider.INT)
+        self.ransac_max_validation_slider.set_limits(100, 10000)  # 设置 RANSAC 验证次数的范围
+        self.ransac_max_validation_slider.int_value = 500  # 设置默认值
+        self.ransac_max_validation_slider.set_on_value_changed(self._on_ransac_max_validation_changed)
+        self.ransac_layout.add_child(self.ransac_max_validation_slider)
+
+        # ICP Threshold
+        ransac_inner_layout.add_child(gui.Label("ICP Distance Threshold"))
+        self.icp_threshold_slider = gui.Slider(gui.Slider.DOUBLE)
+        self.icp_threshold_slider.set_limits(0.1, 1.0)
+        self.icp_threshold_slider.double_value = 0.4
+        self.icp_threshold_slider.set_on_value_changed(self._on_icp_threshold_changed)
+        ransac_inner_layout.add_child(self.icp_threshold_slider)
+
+        # Add the inner layout to the RANSAC layout
+        self.ransac_layout.add_child(ransac_inner_layout)
+
+        # Initially, add the RANSAC layout to grid
+        self.grid2.add_child(self.ransac_layout)
+
+        self.process_ctrls = self.grid2
+        self.window.add_child(self.process_ctrls)
 
     def _on_depth_max_changed(self, value):
         if self.pipeline_running:
@@ -246,7 +294,7 @@ class OnlineRegistration:
         else:
             log.warning("Cannot change voxel size while registration is running.")
 
-    def _on_registration_quality_changed(self, text, index):
+    def _on_registration_mode_changed(self, text, index):
         """
         当用户在 Registration Quality 下拉框中选择不同的值时触发。
         参数：
@@ -257,13 +305,31 @@ class OnlineRegistration:
             log.info(f"Combobox selection changed to: {text} (index {index})")
             
             # 更新类属性，供其他部分访问
-            self.registration_quality = text  # 更新 registration_quality 属性
+            self.registration_mode = text  # 更新 registration_mode 属性
             
             # 打印当前选择，调试用
-            log.info(f"Updated registration quality to: {self.registration_quality}")
+            log.info(f"Updated registration quality to: {self.registration_mode}")
             
+            self._update_process_menu()
+
         except Exception as e:
             log.error(f"Error handling registration quality change: {e}")
+
+    def _on_ransac_distance_changed(self, value):
+        # 更新RANSAC配准中的距离阈值倍数
+        self.ransac_distance_multiplier = value
+
+    def _on_ransac_iterations_changed(self, value):
+        # 更新RANSAC的最大迭代次数
+        self.ransac_max_iterations = value
+
+    def _on_ransac_max_validation_changed(self, value):
+        self.ransac_max_validation = int(value)
+        print(f"RANSAC Max Validation set to {self.ransac_max_validation}")
+
+    def _on_icp_threshold_changed(self, value):
+        # 更新ICP配准中的距离阈值倍数
+        self.icp_distance_multiplier = value
 
     def _on_refresh_view_checked(self, is_checked):
         self.refresh_view_on_mode_change = is_checked
@@ -505,8 +571,8 @@ class OnlineRegistration:
         """使用线程处理启动 Registration 的逻辑"""
         if not self.registration_running and self.pipeline_running:
             # 通知主进程开始录制
-            self._on_start_recording()
-            print("Starting recording...")
+            #self._on_start_recording()
+            #print("Starting recording...")
 
             # 设置配准状态为运行中
             self.registration_running = True
@@ -525,8 +591,8 @@ class OnlineRegistration:
             print("Registration stopped.")
 
             # 通知主进程停止录制
-            self._on_stop_recording()
-            print("Recording stopped.")
+            #self._on_stop_recording()
+            #print("Recording stopped.")
 
         self._update_process_menu()
 
@@ -592,6 +658,13 @@ class OnlineRegistration:
         self.depth_max_slider.enabled = self.pipeline_running
         self.depth_min_slider.enabled = self.pipeline_running
 
+        if self.registration_mode == "RANSAC":
+            self.ransac_layout.visible = True
+        else:
+            self.ransac_layout.visible = False
+
+        self.window.set_needs_layout()
+
     def _show_warning_dialog(self, message):
         """
         顯示警告對話框
@@ -648,7 +721,16 @@ class OnlineRegistration:
 
                     print("registering and merging")
                     register_and_merge_start = time.time()
-                    target = register_and_merge(target, source, self.voxel_size, self.registration_quality)
+
+                    args = {
+                        "voxel_size": voxel_size,
+                        "ransac_distance_multiplier": self.ransac_distance_multiplier,
+                        "ransac_max_iterations": self.ransac_max_iterations,
+                        "ransac_max_validation": self.ransac_max_validation,
+                        "icp_distance_multiplier": self.icp_distance_multiplier
+                    }
+                    target = register_and_merge(target, source, self.registration_mode, args)
+                    
                     print(f"registered and merged: {time.time() - register_and_merge_start:.6f} seconds")
                     if target is None:
                             raise RuntimeError("Failed to merge point clouds.")
@@ -669,49 +751,7 @@ class OnlineRegistration:
             print("registration done")
             print(f"Total registration time: {time.time() - start_time:.6f} seconds")
 
-    def register_and_merge(self, target, source, voxel_size, registration_quality):
-        """
-        对 source 和 target 进行配准和合并操作，并对结果进行降采样。
-        """
-        if target is None or source is None:
-            print("Target or Source is not set. Please set both before registration.")
-            return None
-
-        start_time = time.time()
-
-        try:
-            print("Starting registration...")
-
-            # 执行配准
-            if registration_quality == "High":
-                result_icp = pcr.perform_registration(source, target, voxel_size=voxel_size)
-            elif registration_quality == "Low":
-                result_icp = fpcr.perform_fast_registration(source, target, voxel_size=voxel_size)
-
-            # 应用配准变换到 source
-            source.transform(result_icp.transformation)
-            print("Applied transformation to source.")
-
-            # 合并 target 和 source
-            merged_cloud = target + source
-            print("Merged target and source point clouds.")
-
-            # 对合并后的点云进行降采样
-            downsampled_cloud = merged_cloud.voxel_down_sample(voxel_size)
-            print("Downsampled the merged point cloud.")
-
-            return downsampled_cloud
-
-        except Exception as e:
-            print(f"Error during registration and merging: {e}")
-            return None
-
-        finally:
-            end_time = time.time()
-            duration = end_time - start_time
-            print(f"Registration and merging took {duration:.2f} seconds.") 
-
-def register_and_merge(target, source, voxel_size, registration_quality):
+def register_and_merge(target, source, registration_mode, args):
     """
     对 source 和 target 进行配准和合并操作，并对结果进行降采样。
     """
@@ -725,10 +765,14 @@ def register_and_merge(target, source, voxel_size, registration_quality):
         print("Starting registration...")
 
         # 执行配准
-        if registration_quality == "High":
-            result_icp = pcr.perform_registration(source, target, voxel_size=voxel_size)
-        elif registration_quality == "Low":
-            result_icp = fpcr.perform_fast_registration(source, target, voxel_size=voxel_size)
+        if registration_mode == "RANSAC":
+            result_icp = pcr_ransac.perform_registration(source, target, voxel_size=args["voxel_size"], 
+                                                         ransac_distance_multiplier=args["ransac_distance_multiplier"],
+                                                         ransac_max_iterations=args["ransac_max_iterations"],
+                                                         ransac_max_validation=args["ransac_max_validation"],
+                                                         icp_distance_multiplier=args["icp_distance_multiplier"])
+        elif registration_mode == "FAST":
+            result_icp = pcr_fast.perform_fast_registration(source, target, voxel_size=args["voxel_size"])
 
         # 应用配准变换到 source
         source.transform(result_icp.transformation)
@@ -739,7 +783,7 @@ def register_and_merge(target, source, voxel_size, registration_quality):
         print("Merged target and source point clouds.")
 
         # 对合并后的点云进行降采样
-        downsampled_cloud = merged_cloud.voxel_down_sample(voxel_size)
+        downsampled_cloud = merged_cloud.voxel_down_sample(args["voxel_size"])
         print("Downsampled the merged point cloud.")
 
         return downsampled_cloud
