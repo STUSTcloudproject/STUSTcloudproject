@@ -1,6 +1,7 @@
 import open3d as o3d
 import open3d.visualization.gui as gui
 import open3d.visualization.rendering as rendering
+from datetime import datetime
 import platform
 import threading
 import multiprocessing
@@ -10,9 +11,13 @@ import time
 import queue
 import os
 
+
 from pipeline_model import pipeline_process, PipelineModel  # Import your pipeline_process and PipelineModel
 import registration_ransac_icp as pcr_ransac
 import registration_fast_icp as pcr_fast
+import registration_point_to_point_icp as pcr_p2point
+import registration_point_to_plane_icp as pcr_p2plane
+import registration_colored_icp as pcr_colored
 
 isMacOS = (platform.system() == "Darwin")
 
@@ -35,8 +40,12 @@ class OnlineRegistration:
     MENU_REGISTRATION_STOP = 37
     MENU_START_RECORDING = 38
     MENU_STOP_RECORDING = 39
+    MENU_CLEAR_SCENE = 40
 
     def __init__(self, width, height):
+        #儲存文件的原始位置
+        self.original_dir_path = os.getcwd()
+        print(f"Current directory: {self.original_dir_path}")
         self.pcds = []
         self.current_index = -1
         self.imported_filenames = []
@@ -46,6 +55,7 @@ class OnlineRegistration:
         self.ransac_max_iterations = 4000000
         self.ransac_max_validation = 500
         self.icp_distance_multiplier = 0.4
+        self.current_pcd = None
 
         self.pipeline_running = False
         self.cv_running = False
@@ -58,6 +68,12 @@ class OnlineRegistration:
         self.complete_queue = multiprocessing.Queue()
         self.parent_conn, self.child_conn = multiprocessing.Pipe()
 
+        self.pcd_folder_path = "pcd"
+        self.captured_pcd_folder_path = "pcd\\captured_pcd"
+        self.registration_pcd_folder_path = "pcd\\registration_pcd"
+        
+        self.pipeline_start_time = ""
+        
         self.registration_thread = None
 
         self.pipeline_process = None
@@ -93,6 +109,22 @@ class OnlineRegistration:
         
         self._update_process_menu()  # 初始化时更新 Process 菜单项
 
+    def check_or_create_folder(self, folder_name):
+        # 取得相對路徑
+        full_path = os.path.join(os.getcwd(), folder_name)
+
+        # 檢查是否存在目錄
+        if os.path.exists(full_path) and os.path.isdir(full_path):
+            print(f"The folder '{folder_name}' already exists at path: {full_path}")
+        else:
+            # 若不存在，創建資料夾
+            os.makedirs(full_path)
+            print(f"The folder '{folder_name}' does not exist, creating new folder at path: {full_path}")
+        
+        # 返回資料夾的完整路徑
+        return full_path
+
+
     def _setup_menu_bar(self):
         if gui.Application.instance.menubar is None:
             if isMacOS:
@@ -123,6 +155,8 @@ class OnlineRegistration:
             process_menu.add_separator()
             process_menu.add_item("Start Recording", OnlineRegistration.MENU_START_RECORDING)
             process_menu.add_item("Stop Recording", OnlineRegistration.MENU_STOP_RECORDING)
+            process_menu.add_separator()
+            process_menu.add_item("Clear Scene", OnlineRegistration.MENU_CLEAR_SCENE)
 
             help_menu = gui.Menu()
             help_menu.add_item("About", OnlineRegistration.MENU_ABOUT)
@@ -156,6 +190,7 @@ class OnlineRegistration:
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_STOP_CV, self._on_stop_cv)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_START_RECORDING, self._on_start_recording)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_STOP_RECORDING, self._on_stop_recording)
+        self.window.set_on_menu_item_activated(OnlineRegistration.MENU_CLEAR_SCENE, self._on_clear_scene)
 
     def _setup_settings_panel(self):
         em = self.window.theme.font_size
@@ -219,6 +254,9 @@ class OnlineRegistration:
         self.registration_mode_combobox = gui.Combobox()
         self.registration_mode_combobox.add_item("RANSAC")
         self.registration_mode_combobox.add_item("FAST")
+        self.registration_mode_combobox.add_item("P2POINT")
+        self.registration_mode_combobox.add_item("P2PLANE")
+        self.registration_mode_combobox.add_item("COLORED")
         self.registration_mode_combobox.selected_text = "RANSAC"
         self.registration_mode_combobox.set_on_selection_changed(self._on_registration_mode_changed)
         self.grid2.add_child(self.registration_mode_combobox)
@@ -269,6 +307,22 @@ class OnlineRegistration:
 
         self.process_ctrls = self.grid2
         self.window.add_child(self.process_ctrls)
+
+    def _on_clear_scene(self):
+        """
+        清除場景中的所有幾何對象，並重置應用的內部狀態。
+        """
+        try:
+            # 清除場景中的所有幾何對象
+            self._scene.scene.clear_geometry()
+            print("Scene cleared.")
+
+            # 重置與場景相關的內部變量
+            self.current_pcd = None  # 當前點雲設置為None
+            print("Internal state reset.")
+
+        except Exception as e:
+            print(f"Error while clearing scene: {e}")
 
     def _on_depth_max_changed(self, value):
         if self.pipeline_running:
@@ -355,6 +409,8 @@ class OnlineRegistration:
     def _on_load_dialog_done(self, filename):
         self.window.close_dialog()
         self.load_point_cloud(filename)
+        #把目前位置改為self.original_dir_path
+        os.chdir(self.original_dir_path)
 
     def _on_menu_quit(self):
         self._on_stop_cv()  # 确保在退出时停止 CV
@@ -394,6 +450,7 @@ class OnlineRegistration:
             if pcd:
                 self._scene.scene.clear_geometry()
                 self._scene.scene.add_geometry("Point Cloud", pcd, self.material)
+                self.current_pcd = pcd
                 #self._scene.setup_camera(60.0, pcd.get_axis_aligned_bounding_box(), pcd.get_center())
                 print(f"Loaded point cloud from {filename}")
                 return "success"
@@ -410,6 +467,7 @@ class OnlineRegistration:
             if pcd:
                 self._scene.scene.clear_geometry()
                 self._scene.scene.add_geometry("Point Cloud", pcd, self.material)
+                self.current_pcd = pcd
             else:
                 print(f"Failed to load point cloud")
         
@@ -501,15 +559,17 @@ class OnlineRegistration:
     def _start_pipeline(self, rgbd_video):
         """實際啟動 pipeline 的邏輯。"""
         try:
+            self.pipeline_start_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+
             self.start_queue = multiprocessing.Queue()
             self.save_queue = multiprocessing.Queue()
             self.complete_queue = multiprocessing.Queue()
             self.parent_conn, self.child_conn = multiprocessing.Pipe()
-
+            
             # 启动 pipeline 进程，传入 rgbd_video（可能是 None 或 .bag 文件路径）
             self.pipeline_process = multiprocessing.Process(
                 target=pipeline_process, 
-                args=(self.start_queue, self.save_queue, self.complete_queue, self.child_conn, rgbd_video)
+                args=(self.start_queue, self.save_queue, self.complete_queue, self.child_conn, rgbd_video, self.pipeline_start_time)
             )
             self.pipeline_process.start()
 
@@ -554,7 +614,7 @@ class OnlineRegistration:
         complete_message = self.capture_point_cloud()
 
         if complete_message == "SAVED":
-            if self.load_point_cloud("output.ply") == "success":
+            if self.load_point_cloud(f"{self.captured_pcd_folder_path}\\{self.pipeline_start_time}\\output.ply") == "success":
                 # 计算时间差
                 end_time = time.time()
                 total_time = end_time - start_time
@@ -698,14 +758,27 @@ class OnlineRegistration:
         target = None
         source = None
 
+        #顯示當前目錄位置
+        print(f"Current directory: {os.getcwd()}")
         try:
             print("Registration started.")
             start_time = time.time()
-            if self.capture_point_cloud(f"pc{self.filename_counter}.ply") != "SAVED":
-                print("Failed to capture point cloud.")
-                return
-            print(f"captured target: {time.time() - start_time:.6f} seconds")
-            target = o3d.io.read_point_cloud(f"pc{self.filename_counter}.ply")
+
+            registration_start_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            merged_pcd_path = self.check_or_create_folder(f"{self.registration_pcd_folder_path}\\{registration_start_time}")
+
+            if self.current_pcd == None:
+                print("No point cloud loaded. Capturing point cloud as target.")
+                if self.capture_point_cloud(f"pc{self.filename_counter}.ply") != "SAVED":
+                    print("Failed to capture point cloud.")
+                    return
+                print(f"captured target: {time.time() - start_time:.6f} seconds")
+                target = o3d.io.read_point_cloud(f"{self.captured_pcd_folder_path}\\{self.pipeline_start_time}\\pc{self.filename_counter}.ply")
+            else:
+                print("Using current point cloud as target.")
+                target = self.current_pcd
+                o3d.io.write_point_cloud(f"{self.captured_pcd_folder_path}\\{self.pipeline_start_time}\\pc{self.filename_counter}.ply", target)
+
             self.filename_counter += 1
 
             while self.registration_running:
@@ -716,7 +789,7 @@ class OnlineRegistration:
                         break
                     print(f"captured source: {time.time() - capture_source_time:.6f} seconds")
                     
-                    source = o3d.io.read_point_cloud(f"pc{self.filename_counter}.ply")
+                    source = o3d.io.read_point_cloud(f"{self.captured_pcd_folder_path}\\{self.pipeline_start_time}\\pc{self.filename_counter}.ply")
                     self.filename_counter += 1
 
                     print("registering and merging")
@@ -735,7 +808,7 @@ class OnlineRegistration:
                     if target is None:
                             raise RuntimeError("Failed to merge point clouds.")
                     
-                    o3d.io.write_point_cloud(f"merged_{int(time.time())}.ply", target)
+                    o3d.io.write_point_cloud(f"{merged_pcd_path}\\merged_{int(time.time())}.ply", target)
                     self.load_pcd(target)
                     source = None
 
@@ -773,7 +846,12 @@ def register_and_merge(target, source, registration_mode, args):
                                                          icp_distance_multiplier=args["icp_distance_multiplier"])
         elif registration_mode == "FAST":
             result_icp = pcr_fast.perform_fast_registration(source, target, voxel_size=args["voxel_size"])
-
+        elif registration_mode == "P2POINT":
+            result_icp = pcr_p2point.point_to_point_icp(source, target, voxel_size=args["voxel_size"])
+        elif registration_mode == "P2PLANE":
+            result_icp = pcr_p2plane.point_to_plane_icp(source, target, voxel_size=args["voxel_size"])
+        elif registration_mode == "COLORED":
+            result_icp = pcr_colored.colored_icp(source, target, voxel_size=args["voxel_size"])
         # 应用配准变换到 source
         source.transform(result_icp.transformation)
         print("Applied transformation to source.")
@@ -797,10 +875,10 @@ def register_and_merge(target, source, registration_mode, args):
         duration = end_time - start_time
         print(f"Registration and merging took {duration:.2f} seconds.")
 
-def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video):
+def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video, pipeline_start_time):
     """子进程运行的函数，负责执行 PipelineModel 的操作"""
     try:
-        model = PipelineModel(camera_config_file=None, rgbd_video=rgbd_video)
+        model = PipelineModel(pipeline_start_time, camera_config_file=None, rgbd_video=rgbd_video)
     except RuntimeError as e:
         start_queue.put("ERROR")
         print(f"Pipeline process failed to start: {e}")
