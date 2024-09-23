@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class PipelineModel:
 
-    def __init__(self, camera_config_file=None, rgbd_video=None, device=None):
+    def __init__(self, pipeline_start_time, camera_config_file=None, rgbd_video=None, device=None):
         self.rgbd_video = rgbd_video
 
         if device:
@@ -32,7 +32,8 @@ class PipelineModel:
         self.show_depth_flag = False
         self.depth_thread = None
         self.recording = False
-
+        self.pipeline_start_time = pipeline_start_time
+        self.captured_pcd_folder_path = self.check_or_create_folder(f"pcd\\captured_pcd\\{pipeline_start_time}") 
         self.filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.bag"
 
         self.capture_started_event = threading.Event()
@@ -90,6 +91,22 @@ class PipelineModel:
             self.status_message = "Failed to initialize RealSense camera or load .bag file."
             print(self.status_message)
             raise
+
+    def check_or_create_folder(self, folder_name):
+        # 取得相對路徑
+        full_path = os.path.join(os.getcwd(), folder_name)
+
+        # 檢查是否存在目錄
+        if os.path.exists(full_path) and os.path.isdir(full_path):
+            print(f"The folder '{folder_name}' already exists at path: {full_path}")
+        else:
+            # 若不存在，創建資料夾
+            os.makedirs(full_path)
+            print(f"The folder '{folder_name}' does not exist, creating new folder at path: {full_path}")
+        
+        # 返回資料夾的完整路徑
+        return full_path
+
 
     def set_depth_max(self, depth_max):
         if depth_max > 0:
@@ -300,7 +317,7 @@ class PipelineModel:
         point_cloud = self._get_current_point_cloud()
 
         if point_cloud is not None:
-            o3d.io.write_point_cloud(ply_path, point_cloud)
+            o3d.io.write_point_cloud(f"{self.captured_pcd_folder_path}\\{ply_path}", point_cloud)
             log.info(f"Point cloud data saved to {ply_path}")
 
     def start_recording(self):
@@ -334,9 +351,9 @@ class PipelineModel:
 
 
 
-def pipeline_process(start_queue, save_queue, complete_queue, rgbd_video):
+def pipeline_process(start_queue, save_queue, complete_queue, rgbd_video, pipeline_start_time):
     try:
-        model = PipelineModel(camera_config_file=None, rgbd_video=rgbd_video)
+        model = PipelineModel(pipeline_start_time, camera_config_file=None, rgbd_video=rgbd_video)
     except RuntimeError:
         start_queue.put("ERROR")
         return
@@ -399,7 +416,11 @@ if __name__ == "__main__":
         print("Invalid choice, please enter '1' or '2'.")
         exit(1)
 
-    process = multiprocessing.Process(target=pipeline_process, args=(start_queue, save_queue, complete_queue, rgbd_video))
+    pipeline_start_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    process = multiprocessing.Process(
+        target=pipeline_process, 
+        args=(start_queue, save_queue, complete_queue, rgbd_video, pipeline_start_time)
+    )
     process.start()
 
     is_started = start_queue.get()
