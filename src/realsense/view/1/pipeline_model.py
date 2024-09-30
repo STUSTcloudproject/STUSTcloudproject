@@ -81,6 +81,8 @@ class PipelineModel:
             )
             self.depth_max = 3.0
             self.depth_min = 0.1 
+            self.x_min = -0.5
+            self.x_max = 0.5
             self.pcd_stride = 2
 
             self.start_capture_engine()
@@ -121,6 +123,15 @@ class PipelineModel:
             log.info(f"Depth min set to {self.depth_min}")
         else:
             log.error("Depth min must be a non-negative value.")
+
+    def set_x_min(self, x_min):
+        self.x_min = x_min
+        logging.info(f"X min set to {self.x_min}")
+
+    def set_x_max(self, x_max):
+        self.x_max = x_max
+        logging.info(f"X max set to {self.x_max}")
+
 
     def get_depth_max(self):
 
@@ -173,7 +184,6 @@ class PipelineModel:
         return None, None
 
 
-
     def create_point_cloud(self):
         positions, colors = self.capture_point_cloud()
 
@@ -203,9 +213,29 @@ class PipelineModel:
                 
                 mask = (depth_in_meters < self.depth_min) | (depth_in_meters > self.depth_max)
 
-                color_array[mask] = [0, 0, 0]
+                # Check the shape of color_array before applying mask
+                if len(color_array.shape) == 3:
+                    color_array[mask, :] = [0, 0, 0]
+                else:
+                    # Handle the case where color_array is 2D
+                    color_array[mask] = 0
 
+                # Validate depth_array before normalization
+                if depth_array is None or not depth_array.size:
+                    #log.error("Depth array is None or empty.")
+                    return None, None
+                
+                if np.isnan(depth_array).any() or np.isinf(depth_array).any():
+                    log.error("Depth array contains NaN or Inf values.")
+                    return None, None
+
+                # Normalize the depth array and validate
                 depth_array_normalized = cv2.normalize(depth_array, None, 0, 255, cv2.NORM_MINMAX)
+
+                if depth_array_normalized is None:
+                    log.error("cv2.normalize returned None.")
+                    return None, None
+
                 depth_array_normalized = np.uint8(depth_array_normalized)
 
                 color_array_bgr = cv2.cvtColor(color_array, cv2.COLOR_RGB2BGR)
@@ -218,6 +248,7 @@ class PipelineModel:
         else:
             log.error("RGBD frame is None.")
             return None, None
+
 
     def _show_depth_image_internal(self):
 
@@ -333,7 +364,7 @@ class PipelineModel:
             self.camera.pause_record()
             self.recording = False
             log.info(f"Recording stopped.")
-            self.close()
+            #self.close()
 
 
 
