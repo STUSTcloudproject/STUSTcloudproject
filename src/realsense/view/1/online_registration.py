@@ -41,6 +41,7 @@ class OnlineRegistration:
     MENU_START_RECORDING = 38
     MENU_STOP_RECORDING = 39
     MENU_CLEAR_SCENE = 40
+    MENU_RESET_VIEW = 41
 
     def __init__(self, width, height):
         #儲存文件的原始位置
@@ -141,6 +142,10 @@ class OnlineRegistration:
             settings_menu.add_item("View Controls", OnlineRegistration.MENU_SHOW_SETTINGS)
             settings_menu.add_item("Process Controls", OnlineRegistration.MENU_SHOW_PROCESS_CONTROLS)
 
+            scene_menu = gui.Menu()
+            scene_menu.add_item("Clear Scene", OnlineRegistration.MENU_CLEAR_SCENE)
+            scene_menu.add_item("Reset View", OnlineRegistration.MENU_RESET_VIEW)
+            
 
             process_menu = gui.Menu()
             process_menu.add_item("Start Pipeline", OnlineRegistration.MENU_PIPELINE_START)
@@ -155,8 +160,6 @@ class OnlineRegistration:
             process_menu.add_separator()
             process_menu.add_item("Start Recording", OnlineRegistration.MENU_START_RECORDING)
             process_menu.add_item("Stop Recording", OnlineRegistration.MENU_STOP_RECORDING)
-            process_menu.add_separator()
-            process_menu.add_item("Clear Scene", OnlineRegistration.MENU_CLEAR_SCENE)
 
             help_menu = gui.Menu()
             help_menu.add_item("About", OnlineRegistration.MENU_ABOUT)
@@ -166,10 +169,12 @@ class OnlineRegistration:
                 menu.add_menu("Example", app_menu)
                 menu.add_menu("File", file_menu)
                 menu.add_menu("Settings", settings_menu)
+                menu.add_menu("Scene", scene_menu)
                 menu.add_menu("Process", process_menu)  # 添加 Process 菜单
             else:
                 menu.add_menu("File", file_menu)
                 menu.add_menu("Settings", settings_menu)
+                menu.add_menu("Scene", scene_menu)
                 menu.add_menu("Process", process_menu)  # 添加 Process 菜单
                 menu.add_menu("Help", help_menu)
             gui.Application.instance.menubar = menu
@@ -191,6 +196,7 @@ class OnlineRegistration:
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_START_RECORDING, self._on_start_recording)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_STOP_RECORDING, self._on_stop_recording)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_CLEAR_SCENE, self._on_clear_scene)
+        self.window.set_on_menu_item_activated(OnlineRegistration.MENU_RESET_VIEW, self._on_reset_view)
 
     def _setup_settings_panel(self):
         em = self.window.theme.font_size
@@ -241,10 +247,29 @@ class OnlineRegistration:
         self.depth_min_slider.set_on_value_changed(self._on_depth_min_changed)
         self.grid2.add_child(self.depth_min_slider)
 
+        # 添加 X Max Slider
+        #self.grid2.add_child(gui.Label("X Max"))
+        self.x_max_slider = gui.Slider(gui.Slider.DOUBLE)
+        self.x_max_slider.set_limits(-5.0, 5.0)
+        self.x_max_slider.double_value = 0.5  # 預設值，根據需要調整
+        self.x_max_slider.set_on_value_changed(self._on_x_max_changed)
+        self.grid2.add_child(self.x_max_slider)
+
+        # 添加 X Min Slider
+        #self.grid2.add_child(gui.Label("X Min"))
+        self.x_min_slider = gui.Slider(gui.Slider.DOUBLE)
+        self.x_min_slider.set_limits(-5.0, 5.0)
+        self.x_min_slider.double_value = -0.5  # 預設值，根據需要調整
+        self.x_min_slider.set_on_value_changed(self._on_x_min_changed)
+        self.grid2.add_child(self.x_min_slider)
+
+        self.x_min_slider.visible = False
+        self.x_max_slider.visible = False
+
         # Voxel Size Slider
         self.grid2.add_child(gui.Label("Voxel Size"))
         self.voxel_size_slider = gui.Slider(gui.Slider.DOUBLE)
-        self.voxel_size_slider.set_limits(0.01, 0.2)
+        self.voxel_size_slider.set_limits(0.005, 0.2)
         self.voxel_size_slider.double_value = 0.05
         self.voxel_size_slider.set_on_value_changed(self._on_voxel_size_changed)
         self.grid2.add_child(self.voxel_size_slider)
@@ -305,7 +330,7 @@ class OnlineRegistration:
         # Initially, add the RANSAC layout to grid
         self.grid2.add_child(self.ransac_layout)
 
-        self.process_ctrls = self.grid2
+        self.process_ctrls.add_child(self.grid2)
         self.window.add_child(self.process_ctrls)
 
     def _on_clear_scene(self):
@@ -324,6 +349,13 @@ class OnlineRegistration:
         except Exception as e:
             print(f"Error while clearing scene: {e}")
 
+    def _on_reset_view(self):
+
+        if self.current_pcd is not None:
+            self._scene.setup_camera(60.0, self.current_pcd.get_axis_aligned_bounding_box(), self.current_pcd.get_center())
+        else:
+            print("No point cloud loaded. Cannot reset view.")
+        
     def _on_depth_max_changed(self, value):
         if self.pipeline_running:
             # 向子进程发送新的深度阈值
@@ -339,6 +371,22 @@ class OnlineRegistration:
             log.info(f"Depth min updated to {value}")
         else:
             log.warning("Pipeline is not running. Cannot update depth min.")
+
+    def _on_x_max_changed(self, value):
+        if self.pipeline_running:
+            # 向子进程发送新的 X 最大值
+            self.parent_conn.send(("SET_X_MAX", value))
+            log.info(f"X max updated to {value}")
+        else:
+            log.warning("Pipeline is not running. Cannot update X max.")
+
+    def _on_x_min_changed(self, value):
+        if self.pipeline_running:
+            # 向子进程发送新的 X 最小值
+            self.parent_conn.send(("SET_X_MIN", value))
+            log.info(f"X min updated to {value}")
+        else:
+            log.warning("Pipeline is not running. Cannot update X min.")
 
     def _on_voxel_size_changed(self, value):
         """当 voxel size 滑块值变化时触发"""
@@ -717,6 +765,8 @@ class OnlineRegistration:
 
         self.depth_max_slider.enabled = self.pipeline_running
         self.depth_min_slider.enabled = self.pipeline_running
+        self.x_max_slider.enabled = self.pipeline_running
+        self.x_min_slider.enabled = self.pipeline_running
 
         if self.registration_mode == "RANSAC":
             self.ransac_layout.visible = True
@@ -907,6 +957,14 @@ def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video, 
                     depth_min_value = command[1]
                     model.set_depth_min(depth_min_value)
                     print(f"Depth min updated to {depth_min_value} in PipelineModel.")
+                elif command[0] == "SET_X_MAX":
+                    x_max_value = command[1]
+                    model.set_x_max(x_max_value)
+                    print(f"X max updated to {x_max_value} in PipelineModel.")
+                elif command[0] == "SET_X_MIN":
+                    x_min_value = command[1]
+                    model.set_x_min(x_min_value)
+                    print(f"X min updated to {x_min_value} in PipelineModel.")
             else:
                 if command == "START_CV":
                     model.show_depth_image()
@@ -935,7 +993,7 @@ def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video, 
 
 def main():
     gui.Application.instance.initialize()
-    w = OnlineRegistration(1024, 768)
+    w = OnlineRegistration(1600, 900)
     gui.Application.instance.run()
 
 if __name__ == "__main__":
