@@ -98,6 +98,8 @@ def execute_global_registration(source_down, target_down, source_fpfh, target_fp
     start_time = time.time()
     
     distance_threshold = voxel_size * ransac_distance_multiplier
+
+    # 确保 max_iteration 是整数类型
     result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
         source_down, target_down, source_fpfh, target_fpfh, True,
         distance_threshold,
@@ -105,12 +107,13 @@ def execute_global_registration(source_down, target_down, source_fpfh, target_fp
         4, [
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(0.9),
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(distance_threshold)
-        ], o3d.pipelines.registration.RANSACConvergenceCriteria(max_iteration=ransac_max_iterations, confidence=0.999))  # 修正此行
+        ], o3d.pipelines.registration.RANSACConvergenceCriteria(max_iteration=int(ransac_max_iterations), confidence=0.999))
     
     end_time = time.time()
     print(f"Global registration time: {end_time - start_time:.6f} seconds")
 
     return result
+
 
 
 def refine_registration(source, target, voxel_size, result_ransac, icp_distance_multiplier):
