@@ -155,7 +155,7 @@
             "View": {
                 "Required": {
                     "name": ["Depth Stream", "Registration", "Point Cloud Remove", "PointCloud Mesh Editor", "Visualization", "Online Registration"],
-                    "description": ["數據獲取", "點雲配準", "點雲處理", " 點雲 與 Mesh 操作", "點雲可視化", "Online Registration"]
+                    "description": ["數據獲取", "點雲配準", "點雲處理", " 點雲 與 Mesh 操作", "點雲可視化", "實時重建"]
                 }
             }
         },
@@ -327,7 +327,7 @@
         "content_font_size": "12pt"
     },"Online Registration": {
         "title": "Online Registration",
-        "content": "點雲可視化，用戶可以匯入一個點雲數據並進行可視化。",
+        "content": "實時配準，用戶可以即時的使用深度數據進行實時配準",
         "background_color": "#1E1E1E",
         "font_color": "#DCDCDC",
         "title_font_size": "24pt",
