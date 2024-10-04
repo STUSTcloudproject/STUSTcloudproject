@@ -4,6 +4,7 @@ import multiprocessing
 from open3d.visualization import gui
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+import online_registration
 import visualization
 import PointCloud_Mesh_Editor
 import registration_manual_automatic
@@ -25,6 +26,8 @@ def run_view_system(data):
             app_window = PointCloud_Mesh_Editor.AppWindow(1024, 768)
         elif data['Depth Stream']:
             app_window = online_processing.PipelineController()
+        elif data['Online Registration']:
+            app_window = online_registration.OnlineRegistration(1600, 900)
         gui.Application.instance.run()  # 初始化和运行 Open3D GUI
     except Exception as e:
         print(f"Error starting run: {e}")
@@ -74,10 +77,11 @@ if __name__ == "__main__":
     data = {
         'selected_items_dict': {
             'Depth Stream': False,
-            'Registration': True,
+            'Registration': False,
             'Point Cloud Remove': False,
             'PointCloud Mesh Editor': False,
-            'Visualization': False
+            'Visualization': False,
+            'Online Registration': True
         }
     }
     system = ViewSystem()
