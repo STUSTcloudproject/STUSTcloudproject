@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2024-10-5
+### Added
+- 新增 psutil 庫至依賴項
+
+### Fixed
+- 修正 online_registration.py 關閉程序時無法關閉 pipeline 的 BUG。
+
 ## [0.3.0] - 2024-10-5
 ### Added
 - 新增 Online Registration 功能
