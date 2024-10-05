@@ -105,6 +105,8 @@ class OnlineRegistration:
 
         self.refresh_view_on_mode_change = True
 
+        self.window.set_on_close(self._on_window_close)
+
         gui.Application.instance.menubar.set_checked(OnlineRegistration.MENU_SHOW_SETTINGS, self.view_ctrls.visible)
         gui.Application.instance.menubar.set_checked(OnlineRegistration.MENU_SHOW_PROCESS_CONTROLS, self.process_ctrls.visible)
         
@@ -619,6 +621,7 @@ class OnlineRegistration:
                 target=pipeline_process, 
                 args=(self.start_queue, self.save_queue, self.complete_queue, self.child_conn, rgbd_video, self.pipeline_start_time)
             )
+            self.pipeline_process.daemon = True
             self.pipeline_process.start()
 
             # 等待 pipeline 启动完成
@@ -874,6 +877,25 @@ class OnlineRegistration:
             print("registration done")
             print(f"Total registration time: {time.time() - start_time:.6f} seconds")
 
+    def _on_window_close(self):
+        # 停止任何正在執行的 CV
+        if self.cv_running:
+            self._on_stop_cv()
+
+        # 停止任何正在執行的 Registration
+        if self.registration_running:
+            self._on_registration_stop()
+
+        # 停止 Pipeline
+        if self.pipeline_running:
+            self._on_pipeline_stop()
+
+        # 如果有任何執行緒或子程序需要強制終止，請在此處處理
+
+        # 返回 True 以允許視窗關閉
+        return True
+
+
 def register_and_merge(target, source, registration_mode, args):
     """
     对 source 和 target 进行配准和合并操作，并对结果进行降采样。
@@ -924,6 +946,10 @@ def register_and_merge(target, source, registration_mode, args):
         end_time = time.time()
         duration = end_time - start_time
         print(f"Registration and merging took {duration:.2f} seconds.")
+
+'''
+
+舊版 pipeline_process
 
 def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video, pipeline_start_time):
     """子进程运行的函数，负责执行 PipelineModel 的操作"""
@@ -988,6 +1014,82 @@ def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video, 
                 print(f"Invalid save path: {save_path}")
 
     model.close()
+
+'''
+
+
+def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video, pipeline_start_time):
+    import os
+    import time
+    import cv2
+    import psutil
+
+    parent_pid = os.getppid()
+
+    try:
+        model = PipelineModel(pipeline_start_time, camera_config_file=None, rgbd_video=rgbd_video)
+    except RuntimeError as e:
+        start_queue.put("ERROR")
+        print(f"Pipeline process failed to start: {e}")
+        return
+
+    # 启动捕获引擎并等待其启动成功
+    model.start_capture_engine()
+    model.capture_started_event.wait()
+
+    while model._get_current_point_cloud() is None:
+        time.sleep(0.1)
+
+    start_queue.put("START")
+
+    while True:
+        # 检查父进程是否仍然存在
+        if not psutil.pid_exists(parent_pid):
+            print("Parent process has terminated. Exiting child process.")
+            break
+
+        # 尝试从管道接收数据
+        try:
+            if conn.poll(0.1):  # 设置一个超时，避免阻塞
+                command = conn.recv()
+                print(f"Received command: {command}")
+                # 处理命令...
+                if isinstance(command, tuple):
+                    # 处理元组命令
+                    pass
+                else:
+                    if command == "START_CV":
+                        model.show_depth_image()
+                    elif command == "STOP_CV":
+                        model.stop_depth_image()
+                    elif command == "START_RECORDING":
+                        model.start_recording()
+                    elif command == "STOP_RECORDING":
+                        model.stop_recording()
+                    # 其他命令处理
+
+        except (EOFError, BrokenPipeError):
+            # 如果连接断开，等待一段时间再重试，而不是立即退出
+            print("Connection to parent process lost. Waiting to reconnect...")
+            time.sleep(1)
+            continue  # 重新开始循环，检查父进程是否存在
+
+        # 检查保存队列
+        if not save_queue.empty():
+            save_path = save_queue.get()
+            if save_path == 'STOP':
+                break
+            if save_path.lower().endswith('.ply'):
+                model.save_point_cloud(save_path)
+                complete_queue.put("SAVED")
+            else:
+                print(f"Invalid save path: {save_path}")
+
+    # 在退出前关闭 OpenCV 窗口
+    model.close()
+    cv2.destroyAllWindows()
+    print("Child process exited gracefully.")
+
 
     
 
