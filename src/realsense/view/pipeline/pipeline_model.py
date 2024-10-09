@@ -113,24 +113,26 @@ class PipelineModel:
     def set_depth_max(self, depth_max):
         if depth_max > 0:
             self.depth_max = depth_max
-            log.info(f"Depth max set to {self.depth_max}")
+            #log.info(f"Depth max set to {self.depth_max}")
         else:
-            log.error("Depth max must be a positive value.")
+            #log.error("Depth max must be a positive value.")
+            pass
 
     def set_depth_min(self, depth_min):
         if depth_min >= 0:
             self.depth_min = depth_min
-            log.info(f"Depth min set to {self.depth_min}")
+            #log.info(f"Depth min set to {self.depth_min}")
         else:
-            log.error("Depth min must be a non-negative value.")
+            #log.error("Depth min must be a non-negative value.")
+            pass
 
     def set_x_min(self, x_min):
         self.x_min = x_min
-        logging.info(f"X min set to {self.x_min}")
+        #logging.info(f"X min set to {self.x_min}")
 
     def set_x_max(self, x_max):
         self.x_max = x_max
-        logging.info(f"X max set to {self.x_max}")
+        #logging.info(f"X max set to {self.x_max}")
 
 
     def get_depth_max(self):
