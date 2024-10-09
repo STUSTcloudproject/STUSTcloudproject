@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2024-10-9
+### Fixed
+- 優化 run.bat
+- 修正 online_registration.py 裡面無法修改允許深度的 BUG。
+- 取消部分 online_registration.py 的日誌輸出。
+
 ## [0.3.1] - 2024-10-5
 ### Added
 - 新增 psutil 庫至依賴項
