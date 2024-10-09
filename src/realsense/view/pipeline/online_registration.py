@@ -362,7 +362,7 @@ class OnlineRegistration:
         if self.pipeline_running:
             # 向子进程发送新的深度阈值
             self.parent_conn.send(("SET_DEPTH_MAX", value))
-            log.info(f"Depth max updated to {value}")
+            #log.info(f"Depth max updated to {value}")
         else:
             log.warning("Pipeline is not running. Cannot update depth max.")
 
@@ -1050,13 +1050,22 @@ def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video, 
 
         # 尝试从管道接收数据
         try:
-            if conn.poll(0.1):  # 设置一个超时，避免阻塞
+            if conn.poll():
                 command = conn.recv()
-                print(f"Received command: {command}")
-                # 处理命令...
+                #print(f"Received command: {command}")
                 if isinstance(command, tuple):
-                    # 处理元组命令
-                    pass
+                    if command[0] == "SET_DEPTH_MAX":
+                        depth_max_value = command[1]
+                        model.set_depth_max(depth_max_value)
+                    elif command[0] == "SET_DEPTH_MIN":
+                        depth_min_value = command[1]
+                        model.set_depth_min(depth_min_value)
+                    elif command[0] == "SET_X_MAX":
+                        x_max_value = command[1]
+                        model.set_x_max(x_max_value)
+                    elif command[0] == "SET_X_MIN":
+                        x_min_value = command[1]
+                        model.set_x_min(x_min_value)
                 else:
                     if command == "START_CV":
                         model.show_depth_image()
@@ -1066,7 +1075,6 @@ def pipeline_process(start_queue, save_queue, complete_queue, conn, rgbd_video, 
                         model.start_recording()
                     elif command == "STOP_RECORDING":
                         model.stop_recording()
-                    # 其他命令处理
 
         except (EOFError, BrokenPipeError):
             # 如果连接断开，等待一段时间再重试，而不是立即退出
