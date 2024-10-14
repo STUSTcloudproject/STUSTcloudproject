@@ -8,6 +8,10 @@
 ### Improved
 - 更新項目 README.md
 
+## [0.3.3] - 2024-10-14
+### Added
+- 新增 update.bat 更新檔
+
 ## [0.3.2] - 2024-10-9
 ### Fixed
 - 優化 run.bat
