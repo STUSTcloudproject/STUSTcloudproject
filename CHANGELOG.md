@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.3.4] - 2024-10-27
+### Added
+- 新增 online_registration.py 裡面的 配準狀態顯示 與 手動配準
+
 ## [0.3.3] - 2024-10-14
 ### Added
 - 新增 update.bat 更新檔
