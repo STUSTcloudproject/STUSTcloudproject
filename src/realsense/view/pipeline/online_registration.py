@@ -11,13 +11,19 @@ import time
 import queue
 import os
 
-
 from .pipeline_model import pipeline_process, PipelineModel  # Import your pipeline_process and PipelineModel
 from . import registration_ransac_icp as pcr_ransac
 from . import registration_fast_icp as pcr_fast
 from . import registration_point_to_point_icp as pcr_p2point
 from . import registration_point_to_plane_icp as pcr_p2plane
 from . import registration_colored_icp as pcr_colored
+'''
+from pipeline_model import pipeline_process, PipelineModel  # Import your pipeline_process and PipelineModel
+import registration_ransac_icp as pcr_ransac
+import registration_fast_icp as pcr_fast
+import registration_point_to_point_icp as pcr_p2point
+import registration_point_to_plane_icp as pcr_p2plane
+import registration_colored_icp as pcr_colored'''
 
 isMacOS = (platform.system() == "Darwin")
 
@@ -42,6 +48,7 @@ class OnlineRegistration:
     MENU_STOP_RECORDING = 39
     MENU_CLEAR_SCENE = 40
     MENU_RESET_VIEW = 41
+    MENU_TOGGLE_AUTO_REGISTRATION = 42
 
     def __init__(self, width, height):
         #儲存文件的原始位置
@@ -57,6 +64,9 @@ class OnlineRegistration:
         self.ransac_max_validation = 500
         self.icp_distance_multiplier = 0.4
         self.current_pcd = None
+
+        self.registration_captured = False
+        self.is_auto_registration = False
 
         self.pipeline_running = False
         self.cv_running = False
@@ -153,6 +163,7 @@ class OnlineRegistration:
             process_menu.add_item("Start Pipeline", OnlineRegistration.MENU_PIPELINE_START)
             process_menu.add_item("Stop Pipeline", OnlineRegistration.MENU_PIPELINE_STOP)
             process_menu.add_separator()
+            process_menu.add_item("Auto Registration", OnlineRegistration.MENU_TOGGLE_AUTO_REGISTRATION)
             process_menu.add_item("Registration Start", OnlineRegistration.MENU_REGISTRATION_START)
             process_menu.add_item("Registration Stop", OnlineRegistration.MENU_REGISTRATION_STOP)
             process_menu.add_separator()
@@ -191,6 +202,7 @@ class OnlineRegistration:
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_PIPELINE_START, self._on_pipeline_start)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_PIPELINE_STOP, self._on_pipeline_stop)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_CAPTURE, self._on_capture)
+        self.window.set_on_menu_item_activated(OnlineRegistration.MENU_TOGGLE_AUTO_REGISTRATION, self._toggle_registration_mode)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_REGISTRATION_START, self._on_registration_start)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_REGISTRATION_STOP, self._on_registration_stop)
         self.window.set_on_menu_item_activated(OnlineRegistration.MENU_START_CV, self._on_start_cv)
@@ -216,22 +228,35 @@ class OnlineRegistration:
 
         self.window.add_child(self._settings_panel)
 
-
     def _setup_view_controls(self):
         em = self.window.theme.font_size
         grid1 = gui.VGrid(2, 0.25 * em)
         
+        # 添加 "BG Color" 標籤和顏色編輯器
         grid1.add_child(gui.Label("BG Color"))
         self._bg_color = gui.ColorEdit()
         self._bg_color.color_value = gui.Color(1, 1, 1)
         self._bg_color.set_on_value_changed(self._on_bg_color_changed)
         grid1.add_child(self._bg_color)
 
+        # 將 grid1 添加到 view_ctrls
         self.view_ctrls.add_child(grid1)
 
     def _setup_process_controls(self):
         em = self.window.theme.font_size
         self.grid2 = gui.Vert(0.25 * em)  # 使用垂直布局
+        
+        # 創建一個水平佈局來放置 Status 標籤和狀態顯示
+        status_row = gui.Horiz(0.25 * em)
+        status_row.add_child(gui.Label("Status"))
+        self._status_label = gui.Label("Idle")  # 初始狀態為 "Idle"
+        status_row.add_child(self._status_label)
+
+        # 將 Status 的水平佈局添加到垂直布局中
+        self.grid2.add_child(status_row)
+
+        # 更新狀態 Idle 綠色
+        self.update_status("Idle", (0, 1, 0))
 
         # Depth Max Slider
         self.grid2.add_child(gui.Label("Depth Max"))
@@ -271,7 +296,7 @@ class OnlineRegistration:
         # Voxel Size Slider
         self.grid2.add_child(gui.Label("Voxel Size"))
         self.voxel_size_slider = gui.Slider(gui.Slider.DOUBLE)
-        self.voxel_size_slider.set_limits(0.005, 0.2)
+        self.voxel_size_slider.set_limits(0.001, 0.2)
         self.voxel_size_slider.double_value = 0.05
         self.voxel_size_slider.set_on_value_changed(self._on_voxel_size_changed)
         self.grid2.add_child(self.voxel_size_slider)
@@ -334,6 +359,48 @@ class OnlineRegistration:
 
         self.process_ctrls.add_child(self.grid2)
         self.window.add_child(self.process_ctrls)
+
+    
+    def update_status(self, new_status, color=(1, 1, 1)):
+        """
+        更新 Status 標籤的內容和顏色。
+        
+        參數：
+        new_status (str): 新的狀態文字。
+        color (tuple): 一個 RGB 三元組，用來設定狀態文字的顏色，預設為黑色。
+        """
+        self._status_label.text = new_status
+        self._status_label.text_color = gui.Color(color[0], color[1], color[2])  # 更新文字顏色
+        self.window.set_needs_layout()  # 讓介面更新以顯示新的狀態
+
+    def _toggle_registration_mode(self):
+        """
+        切換配準模式（手動或自動）。
+        """
+        self.is_auto_registration = not self.is_auto_registration
+        mode = "Auto" if self.is_auto_registration else "Manual"
+        print(f"Registration mode switched to: {mode}")
+
+        # 更新菜單項的狀態顯示
+        gui.Application.instance.menubar.set_checked(OnlineRegistration.MENU_TOGGLE_AUTO_REGISTRATION, self.is_auto_registration)
+
+        self._update_process_menu()
+
+
+    def get_status(self):
+        """
+        獲取當前的 Status 標籤文字和顏色。
+        
+        返回：
+        tuple: 包含當前狀態標籤的文字內容和顏色 (文字內容, (R, G, B))
+        """
+        # 提取當前文字和顏色
+        status_text = self._status_label.text
+        status_color = (self._status_label.text_color.red, 
+                        self._status_label.text_color.green, 
+                        self._status_label.text_color.blue)
+        
+        return status_text, status_color
 
     def _on_clear_scene(self):
         """
@@ -661,22 +728,34 @@ class OnlineRegistration:
 
 
     def _on_capture(self):
-        start_time = time.time()
-        complete_message = self.capture_point_cloud()
+        if not self.registration_running:
+            start_time = time.time()
+            complete_message = self.capture_point_cloud()
 
-        if complete_message == "SAVED":
-            if self.load_point_cloud(f"{self.captured_pcd_folder_path}\\{self.pipeline_start_time}\\output.ply") == "success":
-                # 计算时间差
-                end_time = time.time()
-                total_time = end_time - start_time
-                print(f"Total capture time: {total_time:.6f} seconds")
+            if complete_message == "SAVED":
+                if self.load_point_cloud(f"{self.captured_pcd_folder_path}\\{self.pipeline_start_time}\\output.ply") == "success":
+                    # 计算时间差
+                    end_time = time.time()
+                    total_time = end_time - start_time
+                    print(f"Total capture time: {total_time:.6f} seconds")
+        else:
+            print("Registration is already in progress.")
+            self.registration_captured = True
 
-    def capture_point_cloud(self, filename = "output.ply"):
+    def capture_point_cloud(self, filename="output.ply"):
         """处理捕获点云的逻辑"""
-        if self.pipeline_running:
-            self.save_queue.put(filename)  # 发送保存指令
+        current_status, current_color = self.get_status()  # 保存當前狀態和顏色
+        self.update_status("Capturing Point Cloud", (1, 0.65, 0))  # 更新狀態為捕捉中
+        
+        try:
+            if self.pipeline_running:
+                self.save_queue.put(filename)  # 发送保存指令
+                return_value = self.complete_queue.get()  # 等待保存完成
+                return return_value
+        finally:
+            # 無論捕捉是否成功，最後都恢復之前的狀態和顏色
+            self.update_status(current_status, current_color)
 
-            return self.complete_queue.get()  # 等待保存完成
 
     def _on_registration_start(self):
         """使用线程处理启动 Registration 的逻辑"""
@@ -688,7 +767,7 @@ class OnlineRegistration:
             # 设置配准状态为运行中
             self.registration_running = True
             print("Registration started using threads.")
-            
+            self.update_status("Registration Started", (0, 0, 1))
             self.registration_thread = threading.Thread(target=self.registration)
             self.registration_thread.start()
             
@@ -698,9 +777,10 @@ class OnlineRegistration:
         """处理关闭 Registration 的逻辑"""
         if self.registration_running:
             self.registration_running = False
+            self.registration_captured = True
             self.registration_thread.join()
             print("Registration stopped.")
-
+            self.update_status("Idle", (0, 1, 0))
             # 通知主进程停止录制
             #self._on_stop_recording()
             #print("Recording stopped.")
@@ -746,9 +826,10 @@ class OnlineRegistration:
         gui.Application.instance.menubar.set_enabled(OnlineRegistration.MENU_PIPELINE_STOP, self.pipeline_running)
 
         # 如果 registration 正在运行，禁用 capture；否则根据 pipeline 状态启用/禁用 capture
-        gui.Application.instance.menubar.set_enabled(OnlineRegistration.MENU_CAPTURE, self.pipeline_running and not self.registration_running)
+        gui.Application.instance.menubar.set_enabled(OnlineRegistration.MENU_CAPTURE, self.pipeline_running)
 
         # 根据 Registration 的状态启用/禁用菜单项
+        gui.Application.instance.menubar.set_enabled(OnlineRegistration.MENU_TOGGLE_AUTO_REGISTRATION, self.pipeline_running)
         gui.Application.instance.menubar.set_enabled(OnlineRegistration.MENU_REGISTRATION_START, self.pipeline_running and not self.registration_running)
         gui.Application.instance.menubar.set_enabled(OnlineRegistration.MENU_REGISTRATION_STOP, self.registration_running)
 
@@ -855,6 +936,7 @@ class OnlineRegistration:
                         "ransac_max_validation": self.ransac_max_validation,
                         "icp_distance_multiplier": self.icp_distance_multiplier
                     }
+                    self.update_status("Registering...", (1, 0, 0))
                     target = register_and_merge(target, source, self.registration_mode, args)
                     
                     print(f"registered and merged: {time.time() - register_and_merge_start:.6f} seconds")
@@ -864,6 +946,12 @@ class OnlineRegistration:
                     o3d.io.write_point_cloud(f"{merged_pcd_path}\\merged_{int(time.time())}.ply", target)
                     self.load_pcd(target)
                     source = None
+                    self.registration_captured = False
+                    if not self.is_auto_registration:
+                        self.update_status("Waiting for user to press Capture", (1, 1, 0))
+                        while not self.registration_captured and not self.is_auto_registration:
+                            time.sleep(0.2)
+                        
 
                 except Exception as e:
                         error_message = f"Error during processing: {e}"
