@@ -154,8 +154,8 @@
             },
             "View": {
                 "Required": {
-                    "name": ["Depth Stream", "Registration", "Point Cloud Remove", "PointCloud Mesh Editor", "Visualization", "Online Registration"],
-                    "description": ["數據獲取", "點雲配準", "點雲處理", " 點雲 與 Mesh 操作", "點雲可視化", "實時重建"]
+                    "name": ["Depth Stream", "Registration", "Point Cloud Remove", "PointCloud Mesh Editor", "Visualization", "Online Registration", "Mesh to Nurbs"],
+                    "description": ["數據獲取", "點雲配準", "點雲處理", " 點雲 與 Mesh 操作", "點雲可視化", "實時重建", " Mesh 轉換為 NURBS"]
                 }
             }
         },
@@ -192,7 +192,7 @@
     },
     "View": {
       "title": "View",
-      "content": "在 View 模式下，用戶可以進行多種操作和可視化點雲數據，包括以下小主題：\n- **Depth Stream**: 獲取和保存深度圖像，並使用 Open3d 可視化深度數據。\n- **Registration**: 匯入並配準多個點雲數據，合併為一個點雲。\n- **Point Cloud Remove**: 使用 Eraser 和 Bounding Box 模式選擇並刪除或著色點雲數據。\n- **PointCloud Mesh Editor**: 對點雲進行降採樣，生成 Mesh 或將 Mesh 取樣為點雲。\n- **Visualization**: 匯入點雲數據並進行可視化操作。",
+      "content": "在 View 模式下，用戶可以進行多種操作和可視化點雲數據，包括以下小主題：\n- **Depth Stream**: 獲取和保存深度圖像，並使用 Open3d 可視化深度數據。\n- **Registration**: 匯入並配準多個點雲數據，合併為一個點雲。\n- **Point Cloud Remove**: 使用 Eraser 和 Bounding Box 模式選擇並刪除或著色點雲數據。\n- **PointCloud Mesh Editor**: 對點雲進行降採樣，生成 Mesh 或將 Mesh 取樣為點雲。\n- **Visualization**: 匯入點雲數據並進行可視化操作。\n- **Online Registration**: 及時深度數據實時配準。\n- **Mesh to NURBS**: 轉換 Mesh 為 NURBS 並可視化。",
       "background_color": "#1E1E1E",
       "font_color": "#DCDCDC",
       "title_font_size": "24pt",
@@ -328,6 +328,13 @@
     },"Online Registration": {
         "title": "Online Registration",
         "content": "實時配準，用戶可以即時的使用深度數據進行實時配準",
+        "background_color": "#1E1E1E",
+        "font_color": "#DCDCDC",
+        "title_font_size": "24pt",
+        "content_font_size": "12pt"
+    },"Mesh to Nurbs": {
+        "title": "Mesh to NURBS",
+        "content": "Mesh 轉換為 NURBS，用戶可以將 Mesh 數據轉換為 NURBS 數據。",
         "background_color": "#1E1E1E",
         "font_color": "#DCDCDC",
         "title_font_size": "24pt",

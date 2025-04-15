@@ -2,6 +2,9 @@ import os
 import sys
 import multiprocessing
 from open3d.visualization import gui
+from PyQt5.QtCore import QThread, QObject, pyqtSignal
+import subprocess
+import signal
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import online_registration
@@ -11,11 +14,11 @@ import registration_manual_automatic
 import remove_point_cloud_gui
 import online_processing
 
-
 def run_view_system(data):
     try:
         print("\n\nView System is running\n\n")
         gui.Application.instance.initialize()
+        print(f"Selected items: {data}")
         if data['Visualization']:
             app_window = visualization.AppWindow(1024, 768)
         elif data['Registration']:
@@ -28,7 +31,13 @@ def run_view_system(data):
             app_window = online_processing.PipelineController()
         elif data['Online Registration']:
             app_window = online_registration.OnlineRegistration(1600, 900)
-        gui.Application.instance.run()  # 初始化和运行 Open3D GUI
+        elif data['Mesh to Nurbs']:
+            print("\n\nMesh to Nurbs is running\n\n")
+            script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'MeshToParametricConverter.py')
+            subprocess.Popen([sys.executable, script_path])
+        if not data['Mesh to Nurbs']:
+            gui.Application.instance.run()  # 初始化和运行 Open3D GUI
+        
     except Exception as e:
         print(f"Error starting run: {e}")
 
