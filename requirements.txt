@@ -9,3 +9,5 @@ PyQt5-sip==12.13.0
 matplotlib==3.7.3
 matplotlib-inline==0.1.6
 psutil
+pyvista
+geomdl
