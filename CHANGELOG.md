@@ -1,12 +1,8 @@
 # Changelog
 
-## [Unreleased] - 2023-07-27
-### Fixed
-- 修正 run.bat
-- 修正 remove_point_cloud_gui.py 匯出文件按鈕的名稱為 Export Point Cloud
-
-### Improved
-- 更新項目 README.md
+## [1.0.0] - 2025-1-12
+### Added
+- 新增 MeshToParametricConverter.py 來讓 Mesh 轉化為 參數化曲面 
 
 ## [0.3.4] - 2024-10-27
 ### Added
